@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+.env.*
+.vscode
+dist
+.DS_Store
+npm-debug.log
+pnpm-lock.yaml
+yarn.lock
