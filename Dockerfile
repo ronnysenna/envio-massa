@@ -2,7 +2,8 @@
 # Builder stage
 FROM node:20-bullseye-slim AS builder
 WORKDIR /app
-ENV NODE_ENV=production
+# Ensure devDependencies are installed during the build (tailwind/postcss etc.)
+ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # copy package files and install deps
