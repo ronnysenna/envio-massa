@@ -6,65 +6,52 @@ import { usePathname, useRouter } from "next/navigation";
 import { logout } from "@/lib/auth";
 
 const menuItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/enviar", label: "Enviar Mensagem", icon: Send },
-  { href: "/contatos", label: "Exportar Contatos", icon: Users },
-  { href: "/imagem", label: "Upload de Imagem", icon: ImageIcon },
+    { href: "/dashboard", label: "Dashboard", icon: Home },
+    { href: "/enviar", label: "Enviar Mensagem", icon: Send },
+    { href: "/contatos", label: "Exportar Contatos", icon: Users },
+    { href: "/imagem", label: "Upload de Imagem", icon: ImageIcon },
 ];
 
 export default function Sidebar() {
-  const pathname = usePathname();
-  const router = useRouter();
+    const pathname = usePathname();
+    const router = useRouter();
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
+    const handleLogout = () => {
+        logout();
+        router.push("/login");
+    };
 
-  return (
-    <div className="w-64 bg-gray-900 text-white h-screen fixed left-0 top-0 flex flex-col">
-      {/* Logo/Header */}
-      <div className="p-6 border-b border-gray-700">
-        <h1 className="text-xl font-bold">Envio em Massa</h1>
-      </div>
+    return (
+        <aside className="w-64 h-screen fixed left-0 top-0 flex flex-col bg-white border-r" aria-label="Sidebar">
+            <div className="p-6 border-b">
+                <h1 className="text-lg font-bold text-gray-900">Envio em Massa</h1>
+                <div className="text-xs text-muted mt-1">Envie campanhas facilmente</div>
+            </div>
 
-      {/* Menu Items */}
-      <nav className="flex-1 py-6">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
+            <nav className="flex-1 py-6">
+                {menuItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`
-                flex items-center gap-3 px-6 py-3 transition-colors
-                ${
-                  isActive
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                }
-              `}
-            >
-              <Icon size={20} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            className={`flex items-center gap-3 px-6 py-3 transition-colors ${isActive ? 'border-l-4 border-primary-600 bg-gradient-to-r from-white to-[rgba(99,102,241,0.02)]' : 'text-gray-700 hover:bg-[rgba(15,23,42,0.02)]'}`}
+                        >
+                            <Icon size={18} className={isActive ? 'text-primary-600' : 'text-muted'} />
+                            <span className={`text-sm ${isActive ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>{item.label}</span>
+                        </Link>
+                    );
+                })}
+            </nav>
 
-      {/* Logout Button */}
-      <div className="p-6 border-t border-gray-700">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-4 py-3 text-gray-300 hover:bg-red-600 hover:text-white rounded transition-colors"
-        >
-          <LogOut size={20} />
-          <span>Sair</span>
-        </button>
-      </div>
-    </div>
-  );
+            <div className="p-6 border-t">
+                <button type="button" onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-red-50 rounded">
+                    <LogOut size={18} className="text-muted" />
+                    <span className="text-sm">Sair</span>
+                </button>
+            </div>
+        </aside>
+    );
 }

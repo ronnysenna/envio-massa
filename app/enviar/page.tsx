@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle, Loader2, Send, Upload } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Sidebar from "@/components/Sidebar";
+// Sidebar moved to global layout
 import { useToast } from "@/components/ToastProvider";
 import { importFromCSV, importFromExcel } from "@/lib/fileUtils";
 import type { Contact } from "@/lib/webhook";
@@ -20,13 +20,9 @@ export default function EnviarPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUploading, setImageUploading] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [status, setStatus] = useState<{
-        type: "success" | "error" | null;
-        message: string;
-    }>({
-        type: null,
-        message: "",
-    });
+    // remover status persistente — usamos toasts para feedback rápido
+    // modo de envio: 'server' (backend/n8n busca contatos) ou 'client' (envia contatos selecionados)
+    const [sendMode, setSendMode] = useState<"server" | "client">("server");
 
     useEffect(() => {
         let mounted = true;
@@ -47,6 +43,23 @@ export default function EnviarPage() {
             mounted = false;
         };
     }, []);
+
+    // persistir seleção localmente para melhorar UX entre navegações
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem("selectedIds");
+            if (raw) {
+                const parsed = JSON.parse(raw) as number[];
+                if (Array.isArray(parsed)) setSelectedIds(parsed);
+            }
+        } catch { }
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem("selectedIds", JSON.stringify(selectedIds));
+        } catch { }
+    }, [selectedIds]);
 
     // Renderer para react-window (definido fora do JSX)
     const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
@@ -192,70 +205,45 @@ export default function EnviarPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setStatus({ type: null, message: "" });
+        // não usamos status persistente aqui, apenas toasts
 
         if (!message.trim()) {
-            toast.showToast({
-                type: "error",
-                message: "Por favor, digite uma mensagem.",
-            });
+            toast.showToast({ type: "error", message: "Por favor, digite uma mensagem." });
             return;
         }
 
-        const contactsToSend = contacts.filter(
-            (c) => c.id && selectedIds.includes(c.id),
-        );
-        if (contactsToSend.length === 0) {
-            toast.showToast({
-                type: "error",
-                message: "Por favor, selecione ao menos um contato para enviar.",
-            });
+        if (!contacts || contacts.length === 0) {
+            toast.showToast({ type: "error", message: "Nenhum contato disponível. Importe contatos antes de enviar." });
+            return;
+        }
+
+        // se usuário escolheu enviar contatos pelo cliente, garantir seleção
+        const selectedContacts = contacts.filter((c) => c.id && selectedIds.includes(c.id));
+        if (sendMode === "client" && selectedContacts.length === 0) {
+            toast.showToast({ type: "error", message: "Selecione ao menos um contato para enviar quando usar 'Enviar contatos selecionados'." });
             return;
         }
 
         setLoading(true);
 
         try {
-            const result = await sendMessage({
-                message,
-                contacts: contactsToSend,
-                imageUrl: imageUrl || undefined,
-            });
+            const options = sendMode === "client" ? { includeContacts: true, contacts: selectedContacts } : undefined;
+
+            const result = await sendMessage({ message, imageUrl: imageUrl || undefined }, options as any);
 
             if (result.success) {
-                toast.showToast({
-                    type: "success",
-                    message: `Mensagem enviada com sucesso para ${contactsToSend.length} contatos!`,
-                });
+                const sentCount = sendMode === "client" ? selectedContacts.length : contacts.length;
+                toast.showToast({ type: "success", message: `Mensagem enviada com sucesso${sentCount ? ` para ${sentCount} contatos` : ""}!` });
                 setMessage("");
-                setContacts([]);
-                setSelectedIds([]);
+                // manter contatos carregados; limpar imagem
                 setImageFile(null);
                 setImagePreview(null);
                 setImageUrl(null);
-                setStatus({
-                    type: "success",
-                    message: `Enviado para ${contactsToSend.length} contatos`,
-                });
             } else {
-                toast.showToast({
-                    type: "error",
-                    message: result.error || "Erro ao enviar mensagem.",
-                });
-                setStatus({
-                    type: "error",
-                    message: result.error || "Erro ao enviar mensagem.",
-                });
+                toast.showToast({ type: "error", message: result.error || "Erro ao enviar mensagem." });
             }
         } catch (_err) {
-            toast.showToast({
-                type: "error",
-                message: "Erro ao enviar mensagem. Tente novamente.",
-            });
-            setStatus({
-                type: "error",
-                message: "Erro ao enviar mensagem. Tente novamente.",
-            });
+            toast.showToast({ type: "error", message: "Erro ao enviar mensagem. Tente novamente." });
         } finally {
             setLoading(false);
         }
@@ -288,12 +276,9 @@ export default function EnviarPage() {
 
     return (
         <ProtectedRoute>
-            <div className="flex">
-                <Sidebar />
-                <main className="ml-64 flex-1 p-8 bg-gray-50 min-h-screen">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-8">
-                        Enviar Mensagem
-                    </h1>
+            <main className="flex-1 p-8 bg-transparent min-h-screen">
+                <div className="max-w-4xl mx-auto px-4">
+                    <h1 className="text-3xl font-bold text-gray-900 mb-8">Enviar Mensagem</h1>
 
                     <form onSubmit={handleSubmit} className="max-w-3xl">
                         {/* Mensagem */}
@@ -328,21 +313,19 @@ export default function EnviarPage() {
                             </label>
                             <div className="flex items-center gap-4">
                                 <label className="flex-1 cursor-pointer">
-                                    <div
-                                        className={`border-2 border-dashed border-gray-300 rounded-lg p-6 transition text-center ${contacts.length > 0 ? "border-green-500 bg-green-50" : "hover:border-blue-500"}`}
-                                    >
+                                    <div className={`border-2 border-dashed rounded-lg p-6 transition text-center ${contacts.length > 0 ? "border-green-500 bg-white" : "border-gray-300 hover:border-blue-500 bg-white"}`}>
                                         <Upload
                                             className={`mx-auto mb-2 ${contacts.length > 0 ? "text-green-600" : "text-gray-400"}`}
                                             size={32}
                                         />
-                                        <p className="text-sm text-gray-600">
+                                        <p className="text-sm text-gray-700">
                                             {contacts.length > 0
-                                                ? "Arquivo importado com sucesso!"
+                                                ? "Arquivo importado com sucesso"
                                                 : "Clique para selecionar arquivo"}
                                         </p>
                                         <p className="text-xs text-gray-500 mt-1">CSV ou XLSX</p>
                                         {contacts.length > 0 && (
-                                            <div className="mt-2 text-xs text-green-700">
+                                            <div className="mt-2 text-sm text-green-700 font-medium">
                                                 {contacts.length} contatos carregados
                                             </div>
                                         )}
@@ -358,93 +341,152 @@ export default function EnviarPage() {
                             </div>
 
                             {contacts.length > 0 && (
-                                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg flex flex-col gap-2">
-                                    <div className="font-semibold text-green-800">
-                                        Pré-visualização dos contatos importados:
-                                    </div>
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                type="checkbox"
-                                                className="checkbox"
-                                                checked={
-                                                    contacts.length > 0 &&
-                                                    selectedIds.length === contacts.length
-                                                }
-                                                onChange={(e) => {
-                                                    if (e.target.checked) {
-                                                        setSelectedIds(
-                                                            contacts.map((c) => c.id || 0).filter(Boolean),
-                                                        );
-                                                    } else {
-                                                        setSelectedIds([]);
-                                                    }
-                                                }}
-                                            />
-                                            <span className="text-sm font-semibold">
-                                                Selecionar todos
-                                            </span>
+                                <div className="mt-4 p-4 bg-white border border-gray-200 rounded-lg import-preview">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="font-semibold text-gray-800">
+                                            Pré-visualização dos contatos importados:
                                         </div>
+                                        <div className="text-sm text-green-600 font-medium">
+                                            {contacts.length} contatos
+                                        </div>
+                                    </div>
 
-                                        <div className="max-h-40">
-                                            {contacts.length > 200 ? (
-                                                <div ref={virtualContainerRef} style={{ height: 320, overflow: "auto" }} onScroll={onScroll}>
-                                                    <div style={{ height: contacts.length * itemHeight, position: "relative" }}>
-                                                        <div style={{ position: "absolute", top: startIndex * itemHeight, left: 0, right: 0 }}>
-                                                            {visible.map((_, idx) => (
-                                                                <Row key={contacts[startIndex + idx]?.id ?? contacts[startIndex + idx]?.telefone} index={startIndex + idx} style={{ height: itemHeight } as React.CSSProperties} />
-                                                            ))}
-                                                        </div>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <input
+                                            type="checkbox"
+                                            className="h-4 w-4 accent-blue-600"
+                                            checked={
+                                                contacts.length > 0 &&
+                                                selectedIds.length === contacts.length
+                                            }
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedIds(
+                                                        contacts.map((c) => c.id || 0).filter(Boolean),
+                                                    );
+                                                } else {
+                                                    setSelectedIds([]);
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-sm font-semibold text-gray-800">
+                                            Selecionar todos
+                                        </span>
+                                    </div>
+
+                                    <div className="max-h-40">
+                                        {contacts.length > 200 ? (
+                                            <div ref={virtualContainerRef} style={{ height: 320, overflow: "auto" }} onScroll={onScroll}>
+                                                <div style={{ height: contacts.length * itemHeight, position: "relative" }}>
+                                                    <div style={{ position: "absolute", top: startIndex * itemHeight, left: 0, right: 0 }}>
+                                                        {visible.map((_, idx) => (
+                                                            <div
+                                                                key={contacts[startIndex + idx]?.id ?? contacts[startIndex + idx]?.telefone}
+                                                                style={{ height: itemHeight } as React.CSSProperties}
+                                                                className="flex items-center px-2 py-1 border-b clickable-row"
+                                                                onClick={(e) => {
+                                                                    // evitar duplicar quando clicam no checkbox
+                                                                    if ((e.target as HTMLElement).tagName === "INPUT") return;
+                                                                    const c = contacts[startIndex + idx];
+                                                                    if (!c?.id) return;
+                                                                    setSelectedIds((prev) =>
+                                                                        prev.includes(c.id as number)
+                                                                            ? prev.filter((id) => id !== c.id)
+                                                                            : [...prev, c.id as number],
+                                                                    );
+                                                                }}
+                                                            >
+                                                                <div className="flex-1 text-sm text-gray-900">{contacts[startIndex + idx]?.nome}</div>
+                                                                <div className="w-40 text-sm text-gray-700">{contacts[startIndex + idx]?.telefone}</div>
+                                                                <div className="w-24">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="h-4 w-4 accent-blue-600"
+                                                                        checked={!!(contacts[startIndex + idx]?.id && selectedIds.includes(contacts[startIndex + idx]?.id as number))}
+                                                                        onChange={(e) => {
+                                                                            const c = contacts[startIndex + idx];
+                                                                            if (!c?.id) return;
+                                                                            if (e.target.checked) {
+                                                                                setSelectedIds((prev) => (prev.includes(c.id as number) ? prev : [...prev, c.id as number]));
+                                                                            } else {
+                                                                                setSelectedIds((prev) => prev.filter((id) => id !== c.id));
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
-                                            ) : (
-                                                <div className="overflow-auto">
-                                                    <table className="w-full text-xs">
-                                                        <thead>
-                                                            <tr>
-                                                                <th className="text-left px-2 py-1">Nome</th>
-                                                                <th className="text-left px-2 py-1">Telefone</th>
-                                                                <th className="text-left px-2 py-1">Selecionar</th>
+                                            </div>
+                                        ) : (
+                                            <div className="overflow-auto">
+                                                <table className="w-full text-sm">
+                                                    <thead>
+                                                        <tr className="text-left text-xs text-gray-600">
+                                                            <th className="px-2 py-1">Nome</th>
+                                                            <th className="px-2 py-1">Telefone</th>
+                                                            <th className="px-2 py-1">Selecionar</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {contacts.slice(0, 200).map((c) => (
+                                                            <tr key={c.id || c.telefone} className="hover:bg-gray-50 clickable-row" onClick={(e) => {
+                                                                if ((e.target as HTMLElement).tagName === "INPUT") return;
+                                                                if (!c.id) return;
+                                                                setSelectedIds((prev) => (prev.includes(c.id as number) ? prev.filter((id) => id !== c.id) : [...prev, c.id as number]));
+                                                            }}>
+                                                                <td className="px-2 py-1 text-sm text-gray-900">{c.nome}</td>
+                                                                <td className="px-2 py-1 text-sm text-gray-700">{c.telefone}</td>
+                                                                <td className="px-2 py-1">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        className="h-4 w-4 accent-blue-600"
+                                                                        checked={!!(c.id && selectedIds.includes(c.id))}
+                                                                        onChange={(e) => {
+                                                                            if (!c.id) return;
+                                                                            if (e.target.checked) {
+                                                                                setSelectedIds((prev) => {
+                                                                                    const id = c.id as number;
+                                                                                    if (!id) return prev;
+                                                                                    return prev.includes(id) ? prev : [...prev, id];
+                                                                                });
+                                                                            } else {
+                                                                                setSelectedIds((prev) => prev.filter((id) => id !== c.id));
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </td>
                                                             </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {contacts.slice(0, 200).map((c) => (
-                                                                <tr key={c.id || c.telefone} className="hover:bg-white">
-                                                                    <td className="px-2 py-1">{c.nome}</td>
-                                                                    <td className="px-2 py-1">{c.telefone}</td>
-                                                                    <td className="px-2 py-1">
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            checked={!!(c.id && selectedIds.includes(c.id))}
-                                                                            onChange={(e) => {
-                                                                                if (!c.id) return;
-                                                                                if (e.target.checked) {
-                                                                                    setSelectedIds((prev) => {
-                                                                                        const id = c.id as number;
-                                                                                        if (!id) return prev;
-                                                                                        return prev.includes(id) ? prev : [...prev, id];
-                                                                                    });
-                                                                                } else {
-                                                                                    setSelectedIds((prev) => prev.filter((id) => id !== c.id));
-                                                                                }
-                                                                            }}
-                                                                        />
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            )}
-                                        </div>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
                                     </div>
+
                                     {contacts.length > 5 && (
-                                        <div className="text-xs text-gray-500">
+                                        <div className="text-xs text-gray-500 mt-2">
                                             ...e mais {contacts.length - 5} contatos
                                         </div>
                                     )}
                                 </div>
                             )}
+                        </div>
+
+                        {/* Modo de envio */}
+                        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-6">
+                            <div className="text-sm font-semibold text-gray-800 mb-2">Modo de envio</div>
+                            <div className="flex items-center gap-4 text-sm text-gray-700">
+                                <label className="flex items-center gap-2">
+                                    <input type="radio" name="sendMode" value="server" checked={sendMode === "server"} onChange={() => setSendMode("server")} />
+                                    <span className="ml-1">Servidor (recomendado) — n8n buscará seus contatos</span>
+                                </label>
+                                <label className="flex items-center gap-2">
+                                    <input type="radio" name="sendMode" value="client" checked={sendMode === "client"} onChange={() => setSendMode("client")} />
+                                    <span className="ml-1">Enviar contatos selecionados</span>
+                                </label>
+                            </div>
                         </div>
 
                         {/* Upload de Imagem */}
@@ -509,24 +551,6 @@ export default function EnviarPage() {
                             )}
                         </div>
 
-                        {/* Status Messages */}
-                        {status.type && (
-                            <div
-                                className={`mb-6 p-4 rounded-lg flex items-start gap-3 ${status.type === "success" ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
-                            >
-                                {status.type === "success" ? (
-                                    <CheckCircle className="text-green-600 shrink-0" size={20} />
-                                ) : (
-                                    <AlertCircle className="text-red-600 shrink-0" size={20} />
-                                )}
-                                <p
-                                    className={`text-sm ${status.type === "success" ? "text-green-800" : "text-red-800"}`}
-                                >
-                                    {status.message}
-                                </p>
-                            </div>
-                        )}
-
                         {/* Submit Button */}
                         <button
                             type="submit"
@@ -546,8 +570,8 @@ export default function EnviarPage() {
                             )}
                         </button>
                     </form>
-                </main>
-            </div>
+                </div>
+            </main>
         </ProtectedRoute>
     );
 }

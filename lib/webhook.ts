@@ -1,7 +1,5 @@
 import { getErrorMessage } from "./utils";
 
-const _WEBHOOK_URL = "https://n8n.ronnysenna.com.br/webhook/envio";
-
 export interface Contact {
   id?: number;
   nome: string;
@@ -11,25 +9,40 @@ export interface Contact {
 
 export interface MessagePayload {
   message: string;
-  contacts: Contact[];
+  // contatos são mantidos apenas para uso no cliente; o endpoint interno `/api/send` agora
+  // aceita somente { message, imageUrl } por padrão e o servidor usa userId para buscar contatos.
+  contacts?: Contact[];
   image?: string; // Base64 da imagem (legacy)
   imageUrl?: string; // URL pública da imagem
 }
 
-export async function sendMessage(payload: MessagePayload) {
+export async function sendMessage(
+  payload: MessagePayload,
+  options?: { includeContacts?: boolean; contacts?: Contact[] }
+) {
   try {
+    // construir corpo que será enviado para /api/send
+    const body: Record<string, unknown> = {
+      message: payload.message,
+      imageUrl: payload.imageUrl,
+    };
+
+    if (
+      options?.includeContacts &&
+      Array.isArray(options.contacts) &&
+      options.contacts.length > 0
+    ) {
+      body.contacts = options.contacts.map((c) => ({
+        nome: c.nome,
+        telefone: c.telefone,
+      }));
+    }
+
     // Envia para rota interna que por sua vez encaminha ao webhook
     const res = await fetch("/api/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: payload.message,
-        contacts: payload.contacts.map((c) => ({
-          nome: c.nome,
-          telefone: c.telefone,
-        })),
-        imageUrl: payload.imageUrl,
-      }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
