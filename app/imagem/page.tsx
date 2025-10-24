@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
     Upload,
@@ -22,6 +21,26 @@ export default function ImagemPage() {
     }>({ type: null, message: "" });
     const [uploading, setUploading] = useState(false);
     const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+    const [images, setImages] = useState<Array<{ id: number; url: string; filename: string; createdAt: string; userId: number }>>([]);
+
+    // carregar imagens públicas do servidor
+    useEffect(() => {
+        let mounted = true;
+        async function load() {
+            try {
+                const res = await fetch('/api/images');
+                if (!mounted) return;
+                if (res.ok) {
+                    const data = await res.json();
+                    setImages(data.images || []);
+                }
+            } catch (_err) {
+                // ignore
+            }
+        }
+        load();
+        return () => { mounted = false; };
+    }, []);
 
     const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -89,12 +108,11 @@ export default function ImagemPage() {
     };
 
     return (
-        <ProtectedRoute>
+        <>
             <main className="flex-1 p-8 bg-transparent min-h-screen">
                 <div className="max-w-4xl mx-auto px-4">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-8">
-                        Upload de Imagem
-                    </h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Upload de Imagem (público)</h1>
+                    <p className="text-sm text-gray-600 mb-6">A galeria abaixo exibe as imagens salvas no banco. O upload ainda requer autenticação.</p>
 
                     <div className="card max-w-lg">
                         <div className="p-6">
@@ -124,8 +142,8 @@ export default function ImagemPage() {
                             {status.type && (
                                 <div
                                     className={`mt-6 p-4 rounded-lg flex items-start gap-3 ${status.type === "success"
-                                            ? "bg-green-50 border border-green-200"
-                                            : "bg-red-50 border border-red-200"
+                                        ? "bg-green-50 border border-green-200"
+                                        : "bg-red-50 border border-red-200"
                                         }`}
                                 >
                                     {status.type === "success" ? (
@@ -138,8 +156,8 @@ export default function ImagemPage() {
                                     )}
                                     <p
                                         className={`text-sm ${status.type === "success"
-                                                ? "text-green-800"
-                                                : "text-red-800"
+                                            ? "text-green-800"
+                                            : "text-red-800"
                                             }`}
                                     >
                                         {status.message}
@@ -198,8 +216,25 @@ export default function ImagemPage() {
                             )}
                         </div>
                     </div>
+
+                    {/* Galeria pública de imagens salvas */}
+                    <div className="mt-8">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4">Galeria de imagens</h2>
+                        {images.length === 0 ? (
+                            <div className="text-sm text-gray-500">Nenhuma imagem encontrada.</div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {images.map((img) => (
+                                    <a key={img.id} href={img.url} target="_blank" rel="noreferrer" className="block p-1 border rounded bg-white">
+                                        <img src={img.url} alt={img.filename} className="w-full h-40 object-cover rounded" />
+                                        <div className="text-xs text-gray-600 mt-1 truncate">{img.filename}</div>
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </main>
-        </ProtectedRoute>
+        </>
     );
 }

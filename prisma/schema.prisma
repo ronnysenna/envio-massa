@@ -8,12 +8,13 @@ generator client {
 }
 
 model User {
-    id        Int       @id @default(autoincrement())
-    username  String    @unique
+    id        Int        @id @default(autoincrement())
+    username  String     @unique
     password  String
-    createdAt DateTime  @default(now())
+    createdAt DateTime   @default(now())
     contacts  Contact[]
     images    Image[]
+    selection Selection?
 }
 
 model Contact {
@@ -33,4 +34,12 @@ model Image {
     userId    Int
     user      User     @relation(fields: [userId], references: [id])
     createdAt DateTime @default(now())
+}
+
+model Selection {
+    id          Int      @id @default(autoincrement())
+    user        User     @relation(fields: [userId], references: [id])
+    userId      Int      @unique
+    selectedIds Json
+    updatedAt   DateTime @updatedAt
 }

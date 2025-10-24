@@ -20,9 +20,74 @@ export default function EnviarPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUploading, setImageUploading] = useState(false);
     const [loading, setLoading] = useState(false);
+    // confirmação de envio para grandes envios
+    const CONFIRM_THRESHOLD = Number(process.env.NEXT_PUBLIC_CONFIRM_THRESHOLD || 50);
+    const [showConfirm, setShowConfirm] = useState(false);
+    const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
+    // armazena payload pendente caso precise confirmar
+    const pendingSendPayloadRef = useRef<null | { message: string; imageUrl?: string | null; options?: any; targetCount: number }>(null);
+
+    // sincronização da seleção (refs para debounce/concorrência)
+    const syncTimeoutRef = useRef<number | null>(null);
+    const syncingRef = useRef(false);
+
     // remover status persistente — usamos toasts para feedback rápido
     // modo de envio: 'server' (backend/n8n busca contatos) ou 'client' (envia contatos selecionados)
     const [sendMode, setSendMode] = useState<"server" | "client">("server");
+
+    // carregar seleção do servidor ao montar (prefere server, senão usa localStorage)
+    useEffect(() => {
+        let mounted = true;
+        async function loadServerSelection() {
+            try {
+                const res = await fetch('/api/selection');
+                if (!mounted) return;
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data.selectedIds)) {
+                        setSelectedIds(data.selectedIds);
+                        try { localStorage.setItem('selectedIds', JSON.stringify(data.selectedIds)); } catch { };
+                        return;
+                    }
+                }
+            } catch (_err) {
+                // fallback para localStorage já tratado no outro useEffect
+            }
+        }
+        loadServerSelection();
+        return () => { mounted = false; };
+    }, []);
+
+    // quando selectedIds mudar, debounce e enviar ao servidor
+    useEffect(() => {
+        if (syncTimeoutRef.current) window.clearTimeout(syncTimeoutRef.current);
+        // agendar sync em 1s
+        syncTimeoutRef.current = window.setTimeout(async () => {
+            // evitar concorrência
+            if (syncingRef.current) return;
+            syncingRef.current = true;
+            try {
+                await fetch('/api/selection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ selectedIds }),
+                });
+                // opcional: exibir pequeno toast
+                // toast.showToast({ type: 'info', message: 'Seleção sincronizada.' });
+            } catch (_err) {
+                // ignorar falhas, manter em localStorage
+            } finally {
+                syncingRef.current = false;
+            }
+        }, 1000);
+
+        return () => {
+            if (syncTimeoutRef.current) {
+                window.clearTimeout(syncTimeoutRef.current);
+                syncTimeoutRef.current = null;
+            }
+        };
+    }, [selectedIds]);
 
     useEffect(() => {
         let mounted = true;
@@ -224,21 +289,36 @@ export default function EnviarPage() {
             return;
         }
 
+        const targetCount = sendMode === "client" ? selectedContacts.length : contacts.length;
+
+        // guardar payload pendente caso precise de confirmação
+        pendingSendPayloadRef.current = { message, imageUrl, options: sendMode === "client" ? { includeContacts: true, contacts: selectedContacts } : undefined, targetCount };
+
+        // se atingir o limiar, abrir modal de confirmação
+        if (targetCount >= CONFIRM_THRESHOLD) {
+            setShowConfirm(true);
+            return;
+        }
+
+        // caso contrário, enviar imediatamente
+        await performSend();
+    };
+
+    // função reutilizável que executa o envio real (utilizada pelo modal e pelo submit direto)
+    const performSend = async () => {
+        const payload = pendingSendPayloadRef.current ?? { message, imageUrl, options: sendMode === "client" ? { includeContacts: true, contacts: contacts.filter((c) => c.id && selectedIds.includes(c.id)) } : undefined, targetCount: sendMode === "client" ? selectedIds.length : contacts.length };
+        setShowConfirm(false);
         setLoading(true);
-
         try {
-            const options = sendMode === "client" ? { includeContacts: true, contacts: selectedContacts } : undefined;
-
-            const result = await sendMessage({ message, imageUrl: imageUrl || undefined }, options as any);
-
+            const result = await sendMessage({ message: payload.message, imageUrl: payload.imageUrl || undefined }, payload.options as any);
             if (result.success) {
-                const sentCount = sendMode === "client" ? selectedContacts.length : contacts.length;
+                const sentCount = payload.targetCount;
                 toast.showToast({ type: "success", message: `Mensagem enviada com sucesso${sentCount ? ` para ${sentCount} contatos` : ""}!` });
                 setMessage("");
-                // manter contatos carregados; limpar imagem
                 setImageFile(null);
                 setImagePreview(null);
                 setImageUrl(null);
+                // limpar seleção opcional: manter por agora para controle do usuário
             } else {
                 toast.showToast({ type: "error", message: result.error || "Erro ao enviar mensagem." });
             }
@@ -246,8 +326,16 @@ export default function EnviarPage() {
             toast.showToast({ type: "error", message: "Erro ao enviar mensagem. Tente novamente." });
         } finally {
             setLoading(false);
+            pendingSendPayloadRef.current = null;
         }
     };
+
+    // foco quando modal abrir
+    useEffect(() => {
+        if (showConfirm) {
+            confirmButtonRef.current?.focus();
+        }
+    }, [showConfirm]);
 
     // Virtualização simples sem dependência externa (evita problemas de tipagem)
     const itemHeight = 36; // px
@@ -354,6 +442,11 @@ export default function EnviarPage() {
                                     <div className="flex items-center gap-2 mb-3">
                                         <input
                                             type="checkbox"
+                                            aria-label={
+                                                contacts.length > 0 && selectedIds.length === contacts.length
+                                                    ? `Desmarcar todos os ${contacts.length} contatos`
+                                                    : `Selecionar todos os contatos`
+                                            }
                                             className="h-4 w-4 accent-blue-600"
                                             checked={
                                                 contacts.length > 0 &&
@@ -401,6 +494,7 @@ export default function EnviarPage() {
                                                                 <div className="w-24">
                                                                     <input
                                                                         type="checkbox"
+                                                                        aria-label={`Selecionar ${contacts[startIndex + idx]?.nome || contacts[startIndex + idx]?.telefone}`}
                                                                         className="h-4 w-4 accent-blue-600"
                                                                         checked={!!(contacts[startIndex + idx]?.id && selectedIds.includes(contacts[startIndex + idx]?.id as number))}
                                                                         onChange={(e) => {
@@ -421,7 +515,7 @@ export default function EnviarPage() {
                                             </div>
                                         ) : (
                                             <div className="overflow-auto">
-                                                <table className="w-full text-sm">
+                                                <table className="w-full text-sm" role="table" aria-label="Lista de contatos">
                                                     <thead>
                                                         <tr className="text-left text-xs text-gray-600">
                                                             <th className="px-2 py-1">Nome</th>
@@ -441,6 +535,7 @@ export default function EnviarPage() {
                                                                 <td className="px-2 py-1">
                                                                     <input
                                                                         type="checkbox"
+                                                                        aria-label={`Selecionar ${c.nome || c.telefone}`}
                                                                         className="h-4 w-4 accent-blue-600"
                                                                         checked={!!(c.id && selectedIds.includes(c.id))}
                                                                         onChange={(e) => {
@@ -555,6 +650,7 @@ export default function EnviarPage() {
                         <button
                             type="submit"
                             disabled={loading}
+                            aria-disabled={loading}
                             className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors focus:ring-4 focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
                             {loading ? (
@@ -572,6 +668,37 @@ export default function EnviarPage() {
                     </form>
                 </div>
             </main>
+
+            {/* Modal de confirmação acessível */}
+            {showConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" role="presentation">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="confirm-title"
+                        aria-describedby="confirm-desc"
+                        className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 mx-4"
+                    >
+                        <h2 id="confirm-title" className="text-lg font-semibold text-gray-900 mb-2">Confirmar envio</h2>
+                        <p id="confirm-desc" className="text-sm text-gray-700 mb-4">Você está prestes a enviar a mensagem para um grande número de contatos. Deseja continuar?</p>
+                        <div className="flex items-center gap-4 justify-end">
+                            <button
+                                type="button"
+                                onClick={() => { setShowConfirm(false); pendingSendPayloadRef.current = null; }}
+                                className="px-4 py-2 rounded bg-gray-100 text-gray-800 hover:bg-gray-200"
+                            >Cancelar</button>
+                            <button
+                                ref={confirmButtonRef}
+                                type="button"
+                                onClick={() => performSend()}
+                                className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                                aria-label="Confirmar envio para destinatários"
+                            >Confirmar e Enviar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </ProtectedRoute>
     );
 }
