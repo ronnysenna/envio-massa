@@ -1,5 +1,6 @@
 "use client";
 
+// biome-ignore assist/source/organizeImports: false positive
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -32,7 +33,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-500 to-purple-600">
       <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-4">Registrar</h1>
         <form onSubmit={handleSubmit} className="space-y-4">

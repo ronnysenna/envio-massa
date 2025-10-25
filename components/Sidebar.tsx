@@ -37,7 +37,7 @@ export default function Sidebar() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex items-center gap-3 px-6 py-3 transition-colors ${isActive ? 'border-l-4 border-primary-600 bg-gradient-to-r from-white to-[rgba(99,102,241,0.02)]' : 'text-gray-700 hover:bg-[rgba(15,23,42,0.02)]'}`}
+                            className={`flex items-center gap-3 px-6 py-3 transition-colors ${isActive ? 'border-l-4 border-primary-600 bg-linear-to-r from-white to-[rgba(99,102,241,0.02)]' : 'text-gray-700 hover:bg-[rgba(15,23,42,0.02)]'}`}
                         >
                             <Icon size={18} className={isActive ? 'text-primary-600' : 'text-muted'} />
                             <span className={`text-sm ${isActive ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>{item.label}</span>

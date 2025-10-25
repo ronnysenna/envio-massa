@@ -1,15 +1,13 @@
 "use client";
 
+// biome-ignore assist/source/organizeImports: false positive
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { validateCredentials, login } from "@/lib/auth";
 import { LogIn } from "lucide-react";
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,12 +27,13 @@ export default function LoginPage() {
             // successful login (cookie set by server)
             window.location.href = "/dashboard";
         } catch (err) {
+            console.error(err);
             setError("Erro de conexão");
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+        <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-blue-500 to-purple-600">
             <div className="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md">
                 <div className="flex justify-center mb-6">
                     <div className="bg-blue-600 p-4 rounded-full">
