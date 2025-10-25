@@ -2,10 +2,19 @@
 # Builder stage
 FROM node:20-bullseye-slim AS builder
 WORKDIR /app
-# Ensure devDependencies are installed during the build (tailwind/postcss etc.)
-ENV NODE_ENV=development
-ENV NPM_CONFIG_PRODUCTION=false
+
+# Allow overriding NODE_ENV and npm production flag at build time
+ARG NODE_ENV=development
+ENV NODE_ENV=${NODE_ENV}
+ARG NPM_CONFIG_PRODUCTION=false
+ENV NPM_CONFIG_PRODUCTION=${NPM_CONFIG_PRODUCTION}
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build-time PUBLIC environment variables (only expose NEXT_PUBLIC_* that are safe for the client)
+ARG NEXT_PUBLIC_BASE_URL
+ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+ARG NEXT_PUBLIC_CONFIRM_THRESHOLD
+ENV NEXT_PUBLIC_CONFIRM_THRESHOLD=${NEXT_PUBLIC_CONFIRM_THRESHOLD}
 
 # copy package files and install deps
 COPY package.json package-lock.json* ./
