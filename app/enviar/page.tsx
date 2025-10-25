@@ -20,6 +20,8 @@ export default function EnviarPage() {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageUploading, setImageUploading] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [galleryOpen, setGalleryOpen] = useState(false);
+    const [galleryImages, setGalleryImages] = useState<Array<{ id: number; url: string; filename: string }>>([]);
     // confirmação de envio para grandes envios
     const CONFIRM_THRESHOLD = Number(process.env.NEXT_PUBLIC_CONFIRM_THRESHOLD || 50);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -125,6 +127,13 @@ export default function EnviarPage() {
             localStorage.setItem("selectedIds", JSON.stringify(selectedIds));
         } catch { }
     }, [selectedIds]);
+
+    useEffect(() => {
+        try {
+            const url = localStorage.getItem('selectedImageUrl');
+            if (url) setImageUrl(url);
+        } catch { }
+    }, []);
 
     // Renderer para react-window (definido fora do JSX)
     const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
@@ -256,6 +265,7 @@ export default function EnviarPage() {
                 setImageUrl(null);
             } else {
                 setImageUrl(data.url);
+                try { localStorage.setItem('selectedImageUrl', data.url); } catch { }
                 toast.showToast({
                     type: "success",
                     message: "Imagem enviada com sucesso.",
@@ -266,6 +276,23 @@ export default function EnviarPage() {
         } finally {
             setImageUploading(false);
         }
+    };
+
+    const openGallery = async () => {
+        try {
+            const res = await fetch('/api/images');
+            if (!res.ok) return;
+            const data = await res.json();
+            setGalleryImages(data.images || []);
+            setGalleryOpen(true);
+        } catch { }
+    };
+
+    const selectGalleryImage = (url: string) => {
+        setImageUrl(url);
+        try { localStorage.setItem('selectedImageUrl', url); } catch { }
+        setGalleryOpen(false);
+        toast.showToast({ type: 'success', message: 'Imagem selecionada.' });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -318,6 +345,7 @@ export default function EnviarPage() {
                 setImageFile(null);
                 setImagePreview(null);
                 setImageUrl(null);
+                try { localStorage.removeItem('selectedImageUrl'); } catch { }
                 // limpar seleção opcional: manter por agora para controle do usuário
             } else {
                 toast.showToast({ type: "error", message: result.error || "Erro ao enviar mensagem." });
@@ -614,6 +642,18 @@ export default function EnviarPage() {
                                 />
                             </label>
 
+                            <div className="mb-4 flex items-center gap-3">
+                                <button type="button" onClick={openGallery} className="btn btn-primary">Selecionar imagem</button>
+                                {imageUrl && (
+                                    <div className="ml-4 flex items-center gap-2">
+                                        <div className="w-20 h-20 relative rounded overflow-hidden border border-(--border)">
+                                            <Image src={imageUrl} alt="Imagem selecionada" fill className="object-cover" />
+                                        </div>
+                                        <button type="button" onClick={() => { setImageUrl(null); try { localStorage.removeItem('selectedImageUrl') } catch { }; }} className="text-sm text-red-600">Remover</button>
+                                    </div>
+                                )}
+                            </div>
+
                             {imagePreview && (
                                 <div className="mt-4">
                                     <div className="relative w-48 h-48">
@@ -695,6 +735,23 @@ export default function EnviarPage() {
                                 aria-label="Confirmar envio para destinatários"
                             >Confirmar e Enviar</button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de galeria */}
+            {galleryOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-(--panel) p-6 rounded-lg max-w-3xl w-full">
+                        <h3 className="text-lg font-semibold text-(--text) mb-4">Selecionar Imagem</h3>
+                        <div className="grid grid-cols-3 gap-3">
+                            {galleryImages.map((img) => (
+                                <button key={img.id} onClick={() => selectGalleryImage(img.url)} className="border p-1 rounded overflow-hidden">
+                                    <div className="relative w-full h-24"><Image src={img.url} alt={img.filename} fill className="object-cover" /></div>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-4 text-right"><button type="button" onClick={() => setGalleryOpen(false)} className="btn">Fechar</button></div>
                     </div>
                 </div>
             )}

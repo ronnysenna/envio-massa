@@ -90,30 +90,34 @@ input[type="checkbox"] {
   }
 }
 
-/* dark mode support (kept but conservative) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #071224;
-    --panel: #071827;
-    --muted: #9ca3af;
-    --text: #e6eef6;
-    --primary: #60a5fa;
-    --primary-600: #3b82f6;
-    --border: #0f1724;
-    --shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
-  }
-  body {
-    background: var(--bg);
-    color: var(--text);
-  }
-  .card {
-    background: var(--panel);
-    border-color: var(--border);
-  }
-  .import-preview,
-  .preview-card {
-    background: var(--panel) !important;
-  }
+/* REMOVIDO: suporte automático a dark mode via prefers-color-scheme para forçar tema claro */
+
+/* Forçar estilo claro para inputs, botões e cards (evita que navegadores em modo noturno alterem o visual) */
+input,
+textarea,
+select {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+input::placeholder,
+textarea::placeholder {
+  color: rgba(15, 23, 42, 0.45);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+.btn-primary {
+  background: linear-gradient(180deg, var(--primary), var(--primary-600));
+  color: white;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.04);
 }
 
 /* small helpers */

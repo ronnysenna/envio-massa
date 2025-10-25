@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
     Upload,
@@ -13,6 +14,7 @@ import { useToast } from "@/components/ToastProvider";
 
 export default function ImagemPage() {
     const toast = useToast();
+    const router = useRouter();
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [status, setStatus] = useState<{
@@ -105,6 +107,34 @@ export default function ImagemPage() {
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!confirm("Confirma excluir esta imagem?")) return;
+        try {
+            const res = await fetch(`/api/images/${id}`, { method: "DELETE", credentials: "include" });
+            if (res.status === 401) {
+                toast.showToast({ type: "error", message: "Sessão expirada. Faça login novamente." });
+                router.push("/login");
+                return;
+            }
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                toast.showToast({ type: "error", message: data.error || "Falha ao excluir imagem." });
+                return;
+            }
+            setImages((s) => s.filter((x) => x.id !== id));
+            toast.showToast({ type: "success", message: "Imagem excluída." });
+        } catch (err) {
+            console.error("delete image error", err);
+            toast.showToast({ type: "error", message: "Erro ao excluir imagem." });
+        }
+    };
+
+    const handleSelectForSend = (url: string) => {
+        // salvar em localStorage para a página de envio recuperar
+        try { localStorage.setItem('selectedImageUrl', url); } catch { }
+        toast.showToast({ type: 'success', message: 'Imagem selecionada para envio.' });
     };
 
     return (
@@ -225,10 +255,18 @@ export default function ImagemPage() {
                         ) : (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                                 {images.map((img) => (
-                                    <a key={img.id} href={img.url} target="_blank" rel="noreferrer" className="block p-1 border rounded bg-white">
-                                        <img src={img.url} alt={img.filename} className="w-full h-40 object-cover rounded" />
-                                        <div className="text-xs text-gray-600 mt-1 truncate">{img.filename}</div>
-                                    </a>
+                                    <div key={img.id} className="block p-1 border rounded bg-(--panel)">
+                                        <div className="relative w-full h-40 rounded overflow-hidden">
+                                            <Image src={img.url} alt={img.filename} fill className="object-cover" />
+                                        </div>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <div className="text-xs text-(--muted) truncate">{img.filename}</div>
+                                            <div className="flex items-center gap-2">
+                                                <button type="button" onClick={() => handleSelectForSend(img.url)} className="text-sm text-blue-600 hover:underline">Selecionar</button>
+                                                <button type="button" onClick={() => handleDelete(img.id)} className="text-sm text-red-600 hover:underline">Excluir</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         )}

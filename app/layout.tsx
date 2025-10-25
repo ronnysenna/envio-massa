@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "@/components/ClientProviders";
-import Sidebar from "@/components/Sidebar";
+import LayoutShell from "@/components/LayoutShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,23 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[var(--bg)] text-[var(--text)]`}>
         <ClientProviders>
-          <div className="min-h-screen">
-            <Sidebar />
-
-            {/* Main content area: páginas devem remover Sidebar local e usar este wrapper */}
-            <div className="ml-64">
-              <header className="h-16 border-b bg-white flex items-center px-6">
-                <div className="flex-1 text-sm text-muted">&nbsp;</div>
-                <div className="flex items-center gap-3">
-                  {/* futuro: avatar / nome do usuário */}
-                </div>
-              </header>
-
-              <main className="pt-6">{children}</main>
-            </div>
-          </div>
+          <LayoutShell>{children}</LayoutShell>
         </ClientProviders>
       </body>
     </html>

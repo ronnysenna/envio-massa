@@ -22,10 +22,10 @@ export default function Sidebar() {
     };
 
     return (
-        <aside className="w-64 h-screen fixed left-0 top-0 flex flex-col bg-white border-r" aria-label="Sidebar">
-            <div className="p-6 border-b">
-                <h1 className="text-lg font-bold text-gray-900">Envio em Massa</h1>
-                <div className="text-xs text-muted mt-1">Envie campanhas facilmente</div>
+        <aside className="w-64 h-screen fixed left-0 top-0 flex flex-col bg-[#071224] text-white border-r border-[#0b1220]" aria-label="Sidebar">
+            <div className="p-6 border-b border-[#0b1220]">
+                <h1 className="text-lg font-bold text-white">Envio em Massa</h1>
+                <div className="text-xs text-gray-300 mt-1">Envie campanhas facilmente</div>
             </div>
 
             <nav className="flex-1 py-6">
@@ -37,18 +37,18 @@ export default function Sidebar() {
                         <Link
                             key={item.href}
                             href={item.href}
-                            className={`flex items-center gap-3 px-6 py-3 transition-colors ${isActive ? 'border-l-4 border-primary-600 bg-linear-to-r from-white to-[rgba(99,102,241,0.02)]' : 'text-gray-700 hover:bg-[rgba(15,23,42,0.02)]'}`}
+                            className={`flex items-center gap-3 px-6 py-3 transition-colors ${isActive ? 'bg-[#0b1620] border-l-4 border-blue-500 text-white' : 'text-gray-300 hover:bg-[#0b1620]/70'}`}
                         >
-                            <Icon size={18} className={isActive ? 'text-primary-600' : 'text-muted'} />
-                            <span className={`text-sm ${isActive ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>{item.label}</span>
+                            <Icon size={18} className={isActive ? 'text-blue-400' : 'text-gray-400'} />
+                            <span className={`text-sm ${isActive ? 'text-white font-medium' : 'text-gray-200'}`}>{item.label}</span>
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="p-6 border-t">
-                <button type="button" onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-2 text-gray-700 hover:bg-red-50 rounded">
-                    <LogOut size={18} className="text-muted" />
+            <div className="p-6 border-t border-[#0b1220]">
+                <button type="button" onClick={handleLogout} className="flex items-center gap-3 w-full px-4 py-2 text-gray-200 hover:bg-red-700/10 rounded">
+                    <LogOut size={18} className="text-gray-300" />
                     <span className="text-sm">Sair</span>
                 </button>
             </div>
