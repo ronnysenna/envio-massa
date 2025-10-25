@@ -18,7 +18,7 @@ import {
 import { useToast } from "@/components/ToastProvider";
 
 export default function ContatosPage() {
-    const toast = useToast();
+    const { showToast } = useToast();
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [page, setPage] = useState(1);
     const [limit, setLimit] = useState(25);
@@ -44,14 +44,14 @@ export default function ContatosPage() {
                 const res = await fetch(`/api/contacts?${q.toString()}`);
                 if (!mounted) return;
                 if (!res.ok) {
-                    toast.showToast({ type: "error", message: "Falha ao buscar contatos." });
+                    showToast({ type: "error", message: "Falha ao buscar contatos." });
                     return;
                 }
                 const data = await res.json();
                 setContacts(data.contacts || []);
                 setTotal(typeof data.total === "number" ? data.total : 0);
             } catch (_err) {
-                toast.showToast({ type: "error", message: "Erro ao carregar contatos." });
+                showToast({ type: "error", message: "Erro ao carregar contatos." });
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -60,7 +60,7 @@ export default function ContatosPage() {
         return () => {
             mounted = false;
         };
-    }, [page, limit, search]);
+    }, [page, limit, search, showToast]);
 
     const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -75,12 +75,12 @@ export default function ContatosPage() {
             } else if (name.endsWith(".xlsx") || name.endsWith(".xls")) {
                 importedContacts = await importFromExcel(file);
             } else {
-                toast.showToast({ type: "error", message: "Formato de arquivo não suportado. Use CSV ou XLSX." });
+                showToast({ type: "error", message: "Formato de arquivo não suportado. Use CSV ou XLSX." });
                 return;
             }
 
             if (importedContacts.length === 0) {
-                toast.showToast({ type: "error", message: "Nenhum contato encontrado no arquivo." });
+                showToast({ type: "error", message: "Nenhum contato encontrado no arquivo." });
                 return;
             }
 
@@ -93,7 +93,7 @@ export default function ContatosPage() {
 
             const result = await res.json().catch(() => ({}));
             if (!res.ok) {
-                toast.showToast({ type: "error", message: result.error || "Falha ao persistir contatos no servidor." });
+                showToast({ type: "error", message: result.error || "Falha ao persistir contatos no servidor." });
                 return;
             }
 
@@ -101,7 +101,7 @@ export default function ContatosPage() {
             const q = new URLSearchParams({ page: String(1), limit: String(limit), search: search || "" });
             const listRes = await fetch(`/api/contacts?${q.toString()}`);
             if (!listRes.ok) {
-                toast.showToast({ type: "error", message: "Importado, mas falha ao buscar contatos do servidor." });
+                showToast({ type: "error", message: "Importado, mas falha ao buscar contatos do servidor." });
                 return;
             }
             const listData = await listRes.json();
@@ -109,29 +109,29 @@ export default function ContatosPage() {
             setTotal(typeof listData.total === "number" ? listData.total : 0);
             setPage(1);
 
-            toast.showToast({ type: "success", message: `${result.inserted ?? 0} inseridos, ${result.updated ?? 0} atualizados.` });
+            showToast({ type: "success", message: `${result.inserted ?? 0} inseridos, ${result.updated ?? 0} atualizados.` });
         } catch (_error) {
-            toast.showToast({ type: "error", message: "Erro ao importar contatos. Verifique o formato do arquivo." });
+            showToast({ type: "error", message: "Erro ao importar contatos. Verifique o formato do arquivo." });
         }
     };
 
     const handleExportCSV = () => {
         if (contacts.length === 0) {
             exportToCSV(TEMPLATE_CONTACTS, "template_contatos.csv");
-            toast.showToast({ type: "success", message: "Template CSV baixado com sucesso!" });
+            showToast({ type: "success", message: "Template CSV baixado com sucesso!" });
         } else {
             exportToCSV(contacts);
-            toast.showToast({ type: "success", message: "Contatos exportados em CSV com sucesso!" });
+            showToast({ type: "success", message: "Contatos exportados em CSV com sucesso!" });
         }
     };
 
     const handleExportExcel = () => {
         if (contacts.length === 0) {
             exportToExcel(TEMPLATE_CONTACTS, "template_contatos.xlsx");
-            toast.showToast({ type: "success", message: "Template Excel baixado com sucesso!" });
+            showToast({ type: "success", message: "Template Excel baixado com sucesso!" });
         } else {
             exportToExcel(contacts);
-            toast.showToast({ type: "success", message: "Contatos exportados em Excel com sucesso!" });
+            showToast({ type: "success", message: "Contatos exportados em Excel com sucesso!" });
         }
     };
 
@@ -276,9 +276,9 @@ export default function ContatosPage() {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
-                                        {contacts.map((contact, _index) => (
+                                        {contacts.map((contact, index) => (
                                             <tr
-                                                key={contact.id ?? contact.telefone}
+                                                key={`${contact.id ?? contact.telefone ?? index}`}
                                                 className="hover:bg-gray-50"
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
