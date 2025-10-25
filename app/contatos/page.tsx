@@ -1,5 +1,6 @@
 "use client";
 
+// biome-ignore assist/source/organizeImports: false positive
 import { useEffect, useState } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import {
@@ -277,7 +278,7 @@ export default function ContatosPage() {
                                     <tbody className="divide-y divide-gray-200">
                                         {contacts.map((contact, _index) => (
                                             <tr
-                                                key={contact.nome + contact.telefone}
+                                                key={contact.id ?? contact.telefone}
                                                 className="hover:bg-gray-50"
                                             >
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">

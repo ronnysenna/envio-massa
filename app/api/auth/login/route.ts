@@ -5,6 +5,8 @@ import prisma from "@/lib/prisma";
 import { getErrorMessage } from "@/lib/utils";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN;
+const IS_PROD = process.env.NODE_ENV === "production";
 
 export async function POST(req: Request) {
   try {
@@ -22,21 +24,27 @@ export async function POST(req: Request) {
     const token = jwt.sign(
       { userId: user.id, username: user.username },
       JWT_SECRET,
-      { expiresIn: "7d" },
+      { expiresIn: "7d" }
     );
+
     const res = NextResponse.json({ id: user.id, username: user.username });
-    res.cookies.set("token", token, {
+
+    // Hardened cookie attributes for stateless JWT
+    const cookieOptions = {
       httpOnly: true,
       path: "/",
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 7, // 7 days
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    });
+      secure: IS_PROD,
+      ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
+    } as Parameters<typeof res.cookies.set>[2];
+
+    res.cookies.set("token", token, cookieOptions);
     return res;
   } catch (unknownErr) {
     return NextResponse.json(
       { error: getErrorMessage(unknownErr) },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
