@@ -33,10 +33,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                     <div
                         key={t.id}
                         className={`max-w-sm w-full px-4 py-3 rounded-lg shadow-lg flex items-start gap-3 transition-opacity animate-fade-in ${t.type === "success"
-                                ? "bg-green-50 border border-green-200 text-green-800"
-                                : t.type === "error"
-                                    ? "bg-red-50 border border-red-200 text-red-800"
-                                    : "bg-gray-50 border border-gray-200 text-gray-800"
+                            ? "bg-green-50 border border-green-200 text-green-800"
+                            : t.type === "error"
+                                ? "bg-red-50 border border-red-200 text-red-800"
+                                : "bg-gray-50 border border-gray-200 text-gray-800"
                             }`}
                     >
                         <div className="flex-1 text-sm">{t.message}</div>
@@ -49,6 +49,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 export function useToast() {
     const ctx = useContext(ToastContext);
-    if (!ctx) throw new Error("useToast must be used within ToastProvider");
+    if (!ctx) {
+        // Durante prerender ou quando usado fora do provider, retornar um fallback silencioso
+        return {
+            showToast: (_: Omit<Toast, "id">) => {
+                // noop
+            },
+        } as ToastContextValue;
+    }
     return ctx;
 }
