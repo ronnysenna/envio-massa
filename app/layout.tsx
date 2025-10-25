@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ClientProviders from "@/components/ClientProviders";
+const ClientProviders = dynamic(() => import("@/components/ClientProviders"), { ssr: false });
 import Sidebar from "@/components/Sidebar";
 
 const geistSans = Geist({
