@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, CheckCircle, Loader2, Send, Upload } from "lucide-react";
+import { Loader2, Send, Upload } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState, useRef, useCallback } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
