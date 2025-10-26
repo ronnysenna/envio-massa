@@ -119,6 +119,11 @@ textarea::placeholder {
   box-shadow: 0 6px 18px rgba(99, 102, 241, 0.12);
   border: 1px solid rgba(15, 23, 42, 0.04);
 }
+.btn-danger {
+  background: #dc2626; /* red-600 */
+  color: white;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
 
 /* small helpers */
 .text-muted {
@@ -130,6 +135,11 @@ textarea::placeholder {
   padding: 0.25rem 0.5rem;
   border-radius: 999px;
   font-size: 0.75rem;
+}
+
+.modal-card {
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 /* end */

@@ -9,12 +9,8 @@ const uploadsDir = path.join(process.cwd(), "public", "uploads");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const MAX_FILE_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 5 * 1024 * 1024); // 5MB default
-const ALLOWED_MIMES = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-]);
+// aceitar somente JPEG/JPG e PNG no servidor (síncrono com validação cliente)
+const ALLOWED_MIMES = new Set(["image/png", "image/jpeg"]);
 
 export async function POST(req: Request) {
   try {
@@ -32,6 +28,13 @@ export async function POST(req: Request) {
     const buffer = Buffer.from(arrayBuffer);
     const originalName =
       (fileField as File & { name?: string }).name || `upload-${Date.now()}`;
+    // validar extensão do nome original antes de gravar
+    if (!/\.(jpe?g|png)$/i.test(originalName)) {
+      return NextResponse.json(
+        { error: "Formato não suportado. Envie apenas JPG, JPEG ou PNG." },
+        { status: 400 }
+      );
+    }
     const destFilename = `${Date.now()}-${originalName}`;
     const destPath = path.join(uploadsDir, destFilename);
     fs.writeFileSync(destPath, buffer);
