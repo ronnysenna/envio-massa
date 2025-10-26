@@ -10,7 +10,13 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const MAX_FILE_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 5 * 1024 * 1024); // 5MB default
 // aceitar somente JPEG/JPG e PNG no servidor (síncrono com validação cliente)
-const ALLOWED_MIMES = new Set(["image/png", "image/jpeg"]);
+const ALLOWED_MIMES = new Set([
+  "image/png",
+  "image/jpeg",
+  // alguns clients podem usar image/jpg ou image/pjpeg
+  "image/jpg",
+  "image/pjpeg",
+]);
 
 export async function POST(req: Request) {
   try {
