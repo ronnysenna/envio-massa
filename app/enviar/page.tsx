@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2, Send, Upload, Image as ImageIcon, CheckSquare, X } from "lucide-react";
-import Image from "next/image";
+// Usaremos <img> nativo para thumbnails (melhor compatibilidade com data URLs e URLs externas)
 import { useEffect, useState, useRef } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useToast } from "@/components/ToastProvider";
@@ -71,8 +71,8 @@ export default function EnviarPage() {
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        // aceitar apenas jpeg/jpg/png
-        const allowedTypes = ['image/jpeg', 'image/png'];
+        // aceitar jpeg/jpg/png (inclui variações como image/jpg e image/pjpeg)
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/pjpeg'];
         const hasValidType = allowedTypes.includes(file.type);
         const hasValidExt = /\.(jpe?g|png)$/i.test(file.name);
         if (!hasValidType || !hasValidExt) {
@@ -297,7 +297,7 @@ export default function EnviarPage() {
                                     <Upload size={16} />
                                     <span className="text-sm">Enviar imagem</span>
                                 </label>
-                                <input id="image-upload" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onChange={handleImageUpload} className="hidden" />
+                                <input id="image-upload" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png,image/jpg,image/pjpeg" onChange={handleImageUpload} className="hidden" />
 
                                 <button type="button" onClick={openGallery} className="px-3 py-2 border rounded text-sm flex items-center gap-2">
                                     <ImageIcon size={16} />
@@ -305,15 +305,25 @@ export default function EnviarPage() {
                                 </button>
 
                                 {imageUrl && (
-                                    <div className="relative rounded overflow-hidden border w-24 h-24 sm:w-28 sm:h-28">
-                                        <Image src={imageUrl} alt="Imagem selecionada" fill className="object-cover" />
+                                    <div className="relative rounded overflow-hidden border w-24 h-24 sm:w-28 sm:h-28 bg-white p-1 flex items-center justify-center">
+                                        <img
+                                            src={encodeURI(imageUrl)}
+                                            alt="Imagem selecionada"
+                                            className="w-full h-full object-contain"
+                                            onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }}
+                                        />
                                     </div>
                                 )}
 
                                 {imagePreview && (
                                     <div className="flex items-center gap-3">
-                                        <div className="relative rounded overflow-hidden border w-24 h-24 sm:w-28 sm:h-28">
-                                            <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                                        <div className="relative rounded overflow-hidden border w-24 h-24 sm:w-28 sm:h-28 bg-white p-1 flex items-center justify-center">
+                                            <img
+                                                src={imagePreview}
+                                                alt="Preview"
+                                                className="w-full h-full object-contain"
+                                                onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }}
+                                            />
                                         </div>
                                         <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setImageUrl(null); try { localStorage.removeItem('selectedImageUrl'); } catch { } }} className="px-2 py-1 border rounded text-sm flex items-center gap-2">
                                             <X size={14} />
@@ -356,17 +366,22 @@ export default function EnviarPage() {
 
                     {galleryOpen && (
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                            <div className="bg-(--panel) p-4 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-auto">
+                            <div className="bg-[var(--panel)] p-4 rounded-lg max-w-4xl w-full max-h-[80vh] overflow-auto">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h3 className="text-lg font-semibold text-(--text)">Selecionar Imagem</h3>
+                                    <h3 className="text-lg font-semibold text-[var(--text)]">Selecionar Imagem</h3>
                                     <button type="button" onClick={() => setGalleryOpen(false)} className="btn">Fechar</button>
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                     {galleryImages.map((img) => (
                                         <button key={img.id} type="button" onClick={() => selectGalleryImage(img.url)} className="block w-full border rounded overflow-hidden bg-white p-3 flex items-center justify-center shadow-sm">
-                                            <div className="relative w-full aspect-square rounded min-h-[120px]">
-                                                <Image src={img.url} alt={img.filename} fill className="object-cover" />
+                                            <div className="w-full aspect-square rounded min-h-[120px] flex items-center justify-center overflow-hidden">
+                                                <img
+                                                    src={encodeURI(img.url)}
+                                                    alt={img.filename}
+                                                    className="w-full h-full object-contain"
+                                                    onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }}
+                                                />
                                             </div>
                                         </button>
                                     ))}

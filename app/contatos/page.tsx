@@ -12,6 +12,32 @@ export default function ContatosPage() {
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
+    // estados para adicionar contato manualmente
+    const [manualName, setManualName] = useState("");
+    const [manualPhone, setManualPhone] = useState("");
+    const [manualPhoneValid, setManualPhoneValid] = useState<boolean>(false);
+
+    // normaliza removendo tudo que não for dígito
+    const normalizePhone = (v: string) => v.replace(/\D/g, "");
+
+    // formata número no padrão brasileiro enquanto o usuário digita
+    const formatBRPhone = (digits: string) => {
+        if (!digits) return "";
+        const d = digits;
+        if (d.length <= 2) return `(${d}`;
+        if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+        if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+        // 11+ digits (DDD + 9 digitos)
+        return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7, 11)}`;
+    };
+
+    const handleManualPhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value;
+        const digits = normalizePhone(raw);
+        setManualPhone(formatBRPhone(digits));
+        // válido se tiver 10 ou 11 dígitos (BR landline/mobile)
+        setManualPhoneValid(digits.length === 10 || digits.length === 11);
+    };
 
     const fetchContacts = useCallback(async (query = "") => {
         try {
@@ -85,6 +111,40 @@ export default function ContatosPage() {
         }
     };
 
+    const handleAddManual = async () => {
+        const nome = manualName.trim();
+        const telefone = normalizePhone(manualPhone.trim());
+        if (!telefone) {
+            showToast({ type: 'error', message: 'Telefone é obrigatório.' });
+            return;
+        }
+        try {
+            const res = await fetch('/api/contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ nome, telefone }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showToast({ type: 'error', message: data.error || 'Falha ao adicionar contato.' });
+                return;
+            }
+            showToast({ type: 'success', message: 'Contato adicionado.' });
+            setManualName('');
+            setManualPhone('');
+            fetchContacts();
+        } catch (err) {
+            console.error('add manual contact', err);
+            showToast({ type: 'error', message: 'Erro ao adicionar contato.' });
+        }
+    };
+
+    const handleClearManual = () => {
+        setManualName('');
+        setManualPhone('');
+    };
+
     return (
         <ProtectedRoute>
             <main className="flex-1 p-6 bg-transparent min-h-screen">
@@ -106,6 +166,53 @@ export default function ContatosPage() {
                             </div>
                         </label>
                         <input id="contacts-file" type="file" accept=".csv,.xlsx,.xls" onChange={handleImport} className="hidden" />
+                    </div>
+
+                    {/* Add manual contact */}
+                    <div className="bg-white p-4 sm:p-6 rounded-lg shadow card-border mb-6">
+                        <div className="text-sm font-medium text-gray-800 mb-2">Adicionar contato manualmente</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <input
+                                id="manual-name"
+                                placeholder="Nome"
+                                value={manualName}
+                                onChange={(e) => setManualName(e.target.value)}
+                                className="col-span-2 px-3 py-2 border rounded"
+                            />
+                            <input
+                                id="manual-phone"
+                                placeholder="Telefone"
+                                value={manualPhone}
+                                onChange={handleManualPhoneChange}
+                                className="px-3 py-2 border rounded"
+                            />
+                        </div>
+                        <div className="mt-1">
+                            <div className="text-xs text-gray-500">Formato: (DD) 9XXXX-XXXX — válido com 10 ou 11 dígitos</div>
+                            {!manualPhoneValid && manualPhone.length > 0 && (
+                                <div className="text-xs text-red-600 mt-1">Telefone inválido. Informe DDD + número (10 ou 11 dígitos).</div>
+                            )}
+                        </div>
+                        <div className="mt-3 flex items-center gap-3">
+                            <button
+                                id="manual-add"
+                                className="px-4 py-2 bg-blue-600 text-white rounded"
+                                type="button"
+                                onClick={handleAddManual}
+                                disabled={!manualPhoneValid}
+                                aria-disabled={!manualPhoneValid}
+                            >
+                                Adicionar
+                            </button>
+                            <button
+                                id="manual-clear"
+                                className="px-4 py-2 border rounded"
+                                type="button"
+                                onClick={handleClearManual}
+                            >
+                                Limpar
+                            </button>
+                        </div>
                     </div>
 
                     {/* Search */}

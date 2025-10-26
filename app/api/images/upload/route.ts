@@ -76,15 +76,28 @@ export async function POST(req: Request) {
       );
     }
 
-    // validar mime se possível
-    const mime = result.mime || "";
+    // Observação: confiamos na validação de extensão feita acima (originalName) e
+    // permitimos .jpg/.jpeg/.png independentemente do MIME que o client reporte.
+    // Normalizar variações comuns e forçar image/jpeg para .jpg/.jpeg quando necessário.
+    let mime = (result.mime || "").toLowerCase();
+    if (mime === "image/jpg" || mime === "image/pjpeg") mime = "image/jpeg";
+    const ext = path.extname(originalName || "").toLowerCase();
+    // se não houver mime confiável, inferir a partir da extensão
+    if (
+      (!mime || !ALLOWED_MIMES.has(mime)) &&
+      (ext === ".jpg" || ext === ".jpeg")
+    ) {
+      mime = "image/jpeg";
+    }
+    if (!mime) {
+      // fallback: use image/jpeg for jpg/jpeg, image/png for png
+      if (ext === ".png") mime = "image/png";
+      else if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
+    }
     if (mime && !ALLOWED_MIMES.has(mime)) {
-      try {
-        fs.unlinkSync(result.filepath);
-      } catch {}
-      return NextResponse.json(
-        { error: "Tipo de arquivo não aceito" },
-        { status: 400 }
+      // se ainda for inesperado, apenas logar e prosseguir (ext já validada)
+      console.warn(
+        `Upload recebido com mime inesperado: ${result.mime} (inferido: ${mime}). Aceitando pela extensão.`
       );
     }
 

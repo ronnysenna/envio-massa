@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
     Upload,
     Image as ImageIcon,
@@ -182,8 +181,8 @@ export default function ImagemPage() {
                         {imagePreview && (
                             <div className="mt-6">
                                 <div className="mb-2 text-gray-700 font-semibold flex items-center gap-2"><ImageIcon size={20} /> Preview da Imagem</div>
-                                <div className="relative max-w-full aspect-w-1 aspect-h-1">
-                                    <Image src={imagePreview} alt="Preview" fill className="object-contain rounded-lg border border-gray-300" />
+                                <div className="relative max-w-full aspect-w-1 aspect-h-1 bg-white p-2 rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden">
+                                    <img src={imagePreview} alt="Preview" className="w-full h-full object-contain rounded-lg" onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }} />
                                 </div>
                                 <div className="flex items-center gap-4 mt-2">
                                     <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setUploadedUrl(null); }} className="text-sm text-red-600 hover:text-red-700">Remover imagem</button>
@@ -210,14 +209,14 @@ export default function ImagemPage() {
                     ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                             {filtered.map((img) => (
-                                <div key={img.id} className="block p-1 rounded bg-(--panel) border border-gray-100">
+                                <div key={img.id} className="block p-1 rounded bg-[var(--panel)] border border-gray-100">
                                     <button type="button" onClick={() => openPreview(img.url)} className="block w-full text-left">
-                                        <div className="relative w-24 h-24 rounded overflow-hidden">
-                                            <Image src={img.url} alt={img.filename} fill className="object-cover" />
+                                        <div className="relative w-24 h-24 rounded overflow-hidden bg-white p-1 flex items-center justify-center">
+                                            <img src={encodeURI(img.url)} alt={img.filename} className="w-full h-full object-contain" onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }} />
                                         </div>
                                     </button>
                                     <div className="flex items-center justify-between mt-1">
-                                        <div className="text-xs text-(--muted) truncate max-w-24">{img.filename}</div>
+                                        <div className="text-xs text-[var(--muted)] truncate max-w-24">{img.filename}</div>
                                         <div className="flex items-center gap-2">
                                             <button type="button" onClick={() => handleSelectForSend(img.url)} className="text-xs text-blue-600 hover:underline">Selecionar</button>
                                             <button type="button" onClick={() => handleDelete(img.id)} className="text-xs text-red-600 hover:underline">Excluir</button>
@@ -247,8 +246,8 @@ export default function ImagemPage() {
                                     <button type="button" onClick={closePreview} aria-label="Fechar" className="absolute top-2 right-2 z-10 bg-white rounded-full p-1 shadow">
                                         ✕
                                     </button>
-                                    <div className="relative w-[80vw] h-[80vh] md:w-[60vw] md:h-[60vh]">
-                                        <Image src={previewUrl} alt="Preview grande" fill className="object-contain bg-black" />
+                                    <div className="relative w-[80vw] h-[80vh] md:w-[60vw] md:h-[60vh] bg-black flex items-center justify-center">
+                                        <img src={encodeURI(previewUrl)} alt="Preview grande" className="w-full h-full object-contain" onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }} />
                                     </div>
                                 </div>
                             </div>
