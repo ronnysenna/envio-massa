@@ -18,12 +18,28 @@ const ALLOWED_MIMES = new Set([
   "image/pjpeg",
 ]);
 
+// checa magic bytes básicos para PNG/JPEG
+const isProbablyImage = (buf: Buffer) => {
+  if (!buf || buf.length < 4) return false;
+  // PNG signature: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    buf.length >= 8 &&
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47
+  )
+    return true;
+  // JPEG starts with FF D8
+  if (buf[0] === 0xff && buf[1] === 0xd8) return true;
+  return false;
+};
+
 export async function POST(req: Request) {
   try {
     const user = await requireUser();
     const userId = user.id;
 
-    // Use Web Request.formData() (App Router) to obtain uploaded file (File/Blob)
     const formData = await req.formData();
     const fileField = formData.get("file") as File | null;
     if (!fileField) {
@@ -32,6 +48,19 @@ export async function POST(req: Request) {
 
     const arrayBuffer = await fileField.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // validação básica de conteúdo (magic bytes) antes de gravar
+    if (!isProbablyImage(buffer)) {
+      const nm = (fileField as File & { name?: string }).name || "unknown";
+      console.warn(
+        `Upload rejeitado: arquivo não parece ser uma imagem válida (size=${buffer.length}, name=${nm})`
+      );
+      return NextResponse.json(
+        { error: "Arquivo não é uma imagem válida ou está corrompido." },
+        { status: 400 }
+      );
+    }
+
     const originalName =
       (fileField as File & { name?: string }).name || `upload-${Date.now()}`;
     // validar extensão do nome original antes de gravar
@@ -41,34 +70,21 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // escrever de forma atômica: gravar em temp e depois renomear
     const destFilename = `${Date.now()}-${originalName}`;
+    const tempFilename = `${destFilename}.tmp`;
+    const tempPath = path.join(uploadsDir, tempFilename);
     const destPath = path.join(uploadsDir, destFilename);
-    fs.writeFileSync(destPath, buffer);
 
-    const result = {
-      filepath: destPath,
-      filename: originalName,
-      mime: (fileField as File).type || "",
-      size: buffer.length,
-    };
+    // escreve o temp file primeiro
+    fs.writeFileSync(tempPath, buffer, { flag: "w" });
 
-    if (!result.filepath) throw new Error("Nenhum arquivo recebido");
-
-    // garantir tamanho (caso formidable não informe)
-    let size = result.size;
-    if (typeof size !== "number") {
+    // garantir tamanho
+    const size = buffer.length;
+    if (size > MAX_FILE_BYTES) {
       try {
-        const stats = fs.statSync(result.filepath);
-        size = stats.size;
-      } catch {
-        // ignore, será validado abaixo
-      }
-    }
-
-    if (typeof size === "number" && size > MAX_FILE_BYTES) {
-      // remover arquivo excedente
-      try {
-        fs.unlinkSync(result.filepath);
+        fs.unlinkSync(tempPath);
       } catch {}
       return NextResponse.json(
         { error: "Arquivo excede o tamanho máximo permitido" },
@@ -76,13 +92,35 @@ export async function POST(req: Request) {
       );
     }
 
-    // Observação: confiamos na validação de extensão feita acima (originalName) e
-    // permitimos .jpg/.jpeg/.png independentemente do MIME que o client reporte.
-    // Normalizar variações comuns e forçar image/jpeg para .jpg/.jpeg quando necessário.
+    // renomear (atomically move temp -> final)
+    try {
+      fs.renameSync(tempPath, destPath);
+    } catch (renameErr) {
+      // se rename falhar, tentar remover temp e retornar erro
+      try {
+        fs.unlinkSync(tempPath);
+      } catch {}
+      console.error(
+        "Falha ao mover arquivo temp para destino:",
+        getErrorMessage(renameErr)
+      );
+      return NextResponse.json(
+        { error: "Falha ao gravar arquivo no servidor." },
+        { status: 500 }
+      );
+    }
+
+    const result = {
+      filepath: destPath,
+      filename: originalName,
+      mime: (fileField as File).type || "",
+      size,
+    };
+
+    // Normalizar MIME comum e inferir quando necessário
     let mime = (result.mime || "").toLowerCase();
     if (mime === "image/jpg" || mime === "image/pjpeg") mime = "image/jpeg";
     const ext = path.extname(originalName || "").toLowerCase();
-    // se não houver mime confiável, inferir a partir da extensão
     if (
       (!mime || !ALLOWED_MIMES.has(mime)) &&
       (ext === ".jpg" || ext === ".jpeg")
@@ -90,12 +128,11 @@ export async function POST(req: Request) {
       mime = "image/jpeg";
     }
     if (!mime) {
-      // fallback: use image/jpeg for jpg/jpeg, image/png for png
       if (ext === ".png") mime = "image/png";
       else if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
     }
+
     if (mime && !ALLOWED_MIMES.has(mime)) {
-      // se ainda for inesperado, apenas logar e prosseguir (ext já validada)
       console.warn(
         `Upload recebido com mime inesperado: ${result.mime} (inferido: ${mime}). Aceitando pela extensão.`
       );
@@ -114,7 +151,6 @@ export async function POST(req: Request) {
         const s3Mod = await import("@aws-sdk/client-s3");
         const { S3Client, PutObjectCommand } = s3Mod;
 
-        // construir client com credenciais se presentes
         const s3ClientConfig: Record<string, unknown> = { region: S3_REGION };
         if (process.env.S3_ACCESS_KEY_ID && process.env.S3_SECRET_ACCESS_KEY) {
           s3ClientConfig.credentials = {
@@ -126,7 +162,7 @@ export async function POST(req: Request) {
         const s3 = new S3Client(
           s3ClientConfig as unknown as Record<string, unknown>
         );
-        const fileBuffer = fs.readFileSync(result.filepath);
+        const fileBuffer = fs.readFileSync(destPath);
         const key = `uploads/${Date.now()}-${dest}`;
         await s3.send(
           new PutObjectCommand({
@@ -138,7 +174,7 @@ export async function POST(req: Request) {
         );
         url = `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${key}`;
         try {
-          fs.unlinkSync(result.filepath);
+          fs.unlinkSync(destPath);
         } catch {}
       } catch (s3Err) {
         console.warn("S3 upload falhou:", getErrorMessage(s3Err));

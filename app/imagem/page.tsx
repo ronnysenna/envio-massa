@@ -22,7 +22,6 @@ export default function ImagemPage() {
     const [uploading, setUploading] = useState(false);
     const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
     const [images, setImages] = useState<Array<{ id: number; url: string; filename: string; createdAt?: string; userId?: number }>>([]);
-    const [search, setSearch] = useState("");
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -44,12 +43,6 @@ export default function ImagemPage() {
         load();
         return () => { mounted = false; };
     }, []);
-
-    const filtered = images.filter((img) => {
-        const q = search.trim().toLowerCase();
-        if (!q) return true;
-        return (img.filename || '').toLowerCase().includes(q);
-    });
 
     const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -196,27 +189,22 @@ export default function ImagemPage() {
                     </div>
                 </div>
 
-                {/* Search for gallery */}
-                <div className="bg-white p-4 sm:p-6 rounded-lg shadow card-border mb-4">
-                    <input type="search" placeholder="Buscar por nome do arquivo" value={search} onChange={(e) => setSearch(e.target.value)} className="w-full px-3 py-2 border rounded" />
-                </div>
-
                 {/* Galeria pública de imagens em miniaturas */}
                 <div className="mt-4">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">Galeria de imagens</h2>
-                    {filtered.length === 0 ? (
+                    {images.length === 0 ? (
                         <div className="text-sm text-gray-500">Nenhuma imagem encontrada.</div>
                     ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                            {filtered.map((img) => (
-                                <div key={img.id} className="block p-1 rounded bg-[var(--panel)] border border-gray-100">
+                            {images.map((img) => (
+                                <div key={img.id} className="block p-1 rounded bg-(--panel) border border-gray-100">
                                     <button type="button" onClick={() => openPreview(img.url)} className="block w-full text-left">
                                         <div className="relative w-24 h-24 rounded overflow-hidden bg-white p-1 flex items-center justify-center">
                                             <img src={encodeURI(img.url)} alt={img.filename} className="w-full h-full object-contain" onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }} />
                                         </div>
                                     </button>
                                     <div className="flex items-center justify-between mt-1">
-                                        <div className="text-xs text-[var(--muted)] truncate max-w-24">{img.filename}</div>
+                                        <div className="text-xs text-(--muted) truncate max-w-24">{img.filename}</div>
                                         <div className="flex items-center gap-2">
                                             <button type="button" onClick={() => handleSelectForSend(img.url)} className="text-xs text-blue-600 hover:underline">Selecionar</button>
                                             <button type="button" onClick={() => handleDelete(img.id)} className="text-xs text-red-600 hover:underline">Excluir</button>
