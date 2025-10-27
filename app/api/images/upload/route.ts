@@ -139,7 +139,7 @@ export async function POST(req: Request) {
     }
 
     const dest = path.basename(result.filepath);
-    let url = `/api/uploads/${dest}`;
+    let url = `/api/download/${dest}`;
 
     // Se variáveis S3 estiverem configuradas, tentar upload para S3 (import dinâmico)
     const S3_BUCKET = process.env.S3_BUCKET;
