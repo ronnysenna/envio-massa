@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { message, imageUrl } = body;
+    const { message, imageUrl, contacts } = body;
     if (!message) {
       return NextResponse.json(
         { error: "Invalid payload: message is required" },
@@ -24,8 +24,23 @@ export async function POST(req: Request) {
       );
     }
 
-    // build reduced payload to n8n (n8n will fetch contacts from DB if needed)
-    const payload = { message, imageUrl, userId: user.id };
+    // build payload to n8n com contatos selecionados em estrutura organizada
+    const payload: Record<string, unknown> = { 
+      message, 
+      imageUrl, 
+      userId: user.id 
+    };
+
+    // Se contatos foram fornecidos, incluir no payload como objeto estruturado
+    if (Array.isArray(contacts) && contacts.length > 0) {
+      payload.selectedContacts = {
+        total: contacts.length,
+        list: contacts.map((c: Record<string, unknown>) => ({
+          nome: c.nome,
+          telefone: c.telefone,
+        })),
+      };
+    }
 
     try {
       const response = await axios.post(WEBHOOK_URL, payload, {
