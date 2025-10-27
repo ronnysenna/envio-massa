@@ -96,7 +96,6 @@ export default function LoginPage() {
                 </form>
 
                 <div className="mt-6 text-center text-sm text-gray-300">
-                    <p>Demo: admin / admin123</p>
                     <p className="mt-2">
                         Não tem conta? <a href="/register" className="text-blue-300 hover:underline">Criar conta</a>
                     </p>
