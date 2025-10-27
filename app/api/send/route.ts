@@ -24,11 +24,29 @@ export async function POST(req: Request) {
       );
     }
 
+    // Extrair apenas o caminho da URL da imagem (/api/download/filename)
+    // Se não houver imagem, usar "sem-imagem"
+    let imagemPath = "sem-imagem";
+    if (imageUrl && typeof imageUrl === "string") {
+      // Se for URL completa, extrair apenas o pathname
+      if (imageUrl.includes("://")) {
+        try {
+          const url = new URL(imageUrl);
+          imagemPath = url.pathname; // Resultado: /api/download/1761503198117-PM.jpg
+        } catch {
+          imagemPath = "sem-imagem";
+        }
+      } else {
+        // Se já for um caminho, usar como está
+        imagemPath = imageUrl;
+      }
+    }
+
     // build payload to n8n com contatos selecionados em estrutura organizada
-    const payload: Record<string, unknown> = { 
-      message, 
-      imageUrl, 
-      userId: user.id 
+    const payload: Record<string, unknown> = {
+      message,
+      imagemUrl: imagemPath,
+      userId: user.id,
     };
 
     // Se contatos foram fornecidos, incluir no payload como objeto estruturado
