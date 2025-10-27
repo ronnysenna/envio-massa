@@ -43,9 +43,26 @@ export async function POST(req: Request) {
     }
 
     // build payload to n8n com contatos selecionados em estrutura organizada
+    // Construir URL completa da imagem (para N8N conseguir fazer download)
+    let imagemUrlCompleta = "sem-imagem";
+    if (imagemPath !== "sem-imagem") {
+      // Em produção no Easypanel, usar URL base do ambiente
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL ||
+        (() => {
+          const protocol = req.headers.get("x-forwarded-proto") || "https";
+          const host =
+            req.headers.get("x-forwarded-host") ||
+            req.headers.get("host") ||
+            "localhost:3000";
+          return `${protocol}://${host}`;
+        })();
+      imagemUrlCompleta = `${baseUrl}${imagemPath}`;
+    }
+
     const payload: Record<string, unknown> = {
       message,
-      imagemUrl: imagemPath,
+      imagemUrl: imagemUrlCompleta,
       userId: user.id,
     };
 
@@ -59,6 +76,18 @@ export async function POST(req: Request) {
         })),
       };
     }
+
+    // Log para debug (remover em produção se necessário)
+    console.log("[WEBHOOK DEBUG]", {
+      imagemPath,
+      imagemUrlCompleta,
+      baseUrl:
+        imagemUrlCompleta !== "sem-imagem"
+          ? imagemUrlCompleta.split("/api/download/")[0]
+          : "N/A",
+      messageLength: message.length,
+      contactsCount: Array.isArray(contacts) ? contacts.length : 0,
+    });
 
     try {
       const response = await axios.post(WEBHOOK_URL, payload, {

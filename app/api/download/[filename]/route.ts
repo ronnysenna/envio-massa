@@ -19,17 +19,23 @@ export async function GET(
       return NextResponse.json({ error: "Invalid filename" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    const filePath = path.join(uploadsDir, filename);
+    // Tentar múltiplos caminhos para suportar desenvolvimento e produção
+    const possiblePaths = [
+      path.join(process.cwd(), "public", "uploads", filename),
+      path.join("/app", "public", "uploads", filename), // Container path
+      path.join("/tmp", "uploads", filename), // Fallback para volumes temporários
+    ];
 
-    // Verificar que está dentro da pasta uploads
-    if (!filePath.startsWith(uploadsDir)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    let filePath: string | null = null;
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        filePath = p;
+        break;
+      }
     }
 
-    // Verificar se arquivo existe
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!filePath) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
     // Ler arquivo
