@@ -71,8 +71,11 @@ export async function POST(req: Request) {
       );
     }
 
+    // sanitize original filename to avoid spaces and special chars in saved file
+    const safeOriginalName = originalName.replace(/[^a-zA-Z0-9.\-_]/g, "-");
+
     // escrever de forma atômica: gravar em temp e depois renomear
-    const destFilename = `${Date.now()}-${originalName}`;
+    const destFilename = `${Date.now()}-${safeOriginalName}`;
     const tempFilename = `${destFilename}.tmp`;
     const tempPath = path.join(uploadsDir, tempFilename);
     const destPath = path.join(uploadsDir, destFilename);
@@ -139,7 +142,9 @@ export async function POST(req: Request) {
     }
 
     const dest = path.basename(result.filepath);
-    let url = `/api/download/${dest}`;
+    // encode dest for URL safety
+    const encodedDest = encodeURIComponent(dest);
+    let url = `/api/download/${encodedDest}`;
 
     // Se variáveis S3 estiverem configuradas, tentar upload para S3 (import dinâmico)
     const S3_BUCKET = process.env.S3_BUCKET;
@@ -181,9 +186,13 @@ export async function POST(req: Request) {
       }
     }
 
-    // se existir NEXT_PUBLIC_BASE_URL, prefixar para formar URL absoluta
-    const base = process.env.NEXT_PUBLIC_BASE_URL || "";
-    const publicUrl = base ? `${base.replace(/\/$/, "")}${url}` : url;
+    // In production we may want to store absolute URL; in dev store relative path to /api/download
+    const configuredBase = process.env.NEXT_PUBLIC_BASE_URL || "";
+    const isProd = process.env.NODE_ENV === "production";
+    const publicUrl =
+      isProd && configuredBase
+        ? `${configuredBase.replace(/\/$/, "")}${url}`
+        : url;
 
     // save image record in DB
     const image = await prisma.image.create({
