@@ -31,7 +31,7 @@ export default function ImagemPage() {
         let mounted = true;
         async function load() {
             try {
-                const res = await fetch('/api/images');
+                const res = await fetch('/api/images', { credentials: 'include' });
                 if (!mounted) return;
                 if (res.ok) {
                     const data = await res.json();
@@ -77,7 +77,7 @@ export default function ImagemPage() {
         try {
             const fd = new FormData();
             fd.append("file", imageFile);
-            const res = await fetch("/api/images/upload", { method: "POST", body: fd });
+            const res = await fetch("/api/images/upload", { method: "POST", body: fd, credentials: 'include' });
             const data = await res.json();
             if (!res.ok) {
                 toast.showToast({ type: "error", message: data.error || "Falha no upload" });

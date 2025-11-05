@@ -105,6 +105,7 @@ export async function POST(req: Request) {
 
     let inserted = 0;
     let updated = 0;
+    let failed = 0;
     const sample = contacts.slice(0, 5);
 
     for (const c of contacts) {
@@ -114,11 +115,16 @@ export async function POST(req: Request) {
 
       const existing = await prisma.contact.findUnique({ where: { telefone } });
       if (existing) {
-        await prisma.contact.update({
-          where: { id: existing.id },
-          data: { nome: c.nome, userId },
-        });
-        updated++;
+        if (existing.userId !== userId) {
+          // Não reatribuir contatos de outro usuário — contar como falha
+          failed++;
+        } else {
+          await prisma.contact.update({
+            where: { id: existing.id },
+            data: { nome: c.nome, userId },
+          });
+          updated++;
+        }
       } else {
         await prisma.contact.create({
           data: { nome: c.nome, telefone, userId },
@@ -127,7 +133,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ inserted, updated, sample });
+    return NextResponse.json({ inserted, updated, failed, sample });
   } catch (err) {
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
