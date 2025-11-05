@@ -20,49 +20,53 @@ export async function GET(req: Request) {
       },
     });
 
-    // Determine base URL. Prefer NEXT_PUBLIC_BASE_URL only when it matches the
-    // incoming Host; otherwise derive from request so local dev points to localhost.
-    const configuredBaseRaw = process.env.NEXT_PUBLIC_BASE_URL;
-    let configuredBase: string | null = null;
-    let configuredHost: string | null = null;
-    try {
-      if (configuredBaseRaw) {
-        configuredBase = configuredBaseRaw.replace(/\/$/, "");
-        configuredHost = new URL(configuredBase).host;
+    // Determine base URL: use NEXT_PUBLIC_BASE_URL only in production. In dev prefer derived host
+    const configuredBase = process.env.NEXT_PUBLIC_BASE_URL;
+    const derivedBase = (() => {
+      try {
+        const protocol =
+          req.headers.get("x-forwarded-proto") ||
+          req.headers.get("x-forwarded-proto") ||
+          "http";
+        const host =
+          req.headers.get("x-forwarded-host") ||
+          req.headers.get("host") ||
+          "localhost:3000";
+        return `${protocol}://${host}`;
+      } catch {
+        return "http://localhost:3000";
       }
-    } catch {
-      configuredBase = null;
-      configuredHost = null;
-    }
+    })();
+    const isProd = process.env.NODE_ENV === "production";
+    const baseUrl =
+      isProd && configuredBase
+        ? configuredBase.replace(/\/$/, "")
+        : derivedBase.replace(/\/$/, "");
 
-    const reqHost =
-      req.headers.get("x-forwarded-host") ||
-      req.headers.get("host") ||
-      "localhost:3000";
-    const reqProto = req.headers.get("x-forwarded-proto") || "http";
-    const derivedBase = `${reqProto}://${reqHost}`;
-
-    const useConfigured =
-      typeof configuredBase === "string" &&
-      typeof configuredHost === "string" &&
-      configuredHost === reqHost;
-    const base: string =
-      useConfigured && configuredBase ? configuredBase : derivedBase;
-
-    // Build absolute URLs for the frontend. Always point to our base host + pathname
     const normalized = images.map((img) => {
       let url = img.url || "";
       try {
-        // Try to parse stored url relative to base to get a stable pathname
-        const parsed = new URL(url, base);
-        const pathname = parsed.pathname + (parsed.search || "");
-        url = `${base.replace(/\/$/, "")}${pathname}`;
+        if (
+          typeof url === "string" &&
+          (url.startsWith("http://") || url.startsWith("https://"))
+        ) {
+          // already absolute - but if in dev and URL host differs from derivedBase, prefer derived base
+          if (!isProd) {
+            try {
+              const parsed = new URL(url);
+              const pathAndSearch = parsed.pathname + (parsed.search || "");
+              url = `${baseUrl}${pathAndSearch}`;
+            } catch {
+              // keep original
+            }
+          }
+        } else if (typeof url === "string" && url.startsWith("/")) {
+          url = `${baseUrl}${url}`;
+        } else if (typeof url === "string") {
+          url = `${baseUrl}/api/download/${encodeURIComponent(String(url))}`;
+        }
       } catch {
-        // Fallback: use filename stored in DB to build download path
-        const name = img.filename || String(url || "");
-        url = `${base.replace(/\/$/, "")}/api/download/${encodeURIComponent(
-          name
-        )}`;
+        // fallback keep original
       }
       return { ...img, url };
     });
