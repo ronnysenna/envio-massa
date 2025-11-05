@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/serverAuth";
 import { getErrorMessage } from "@/lib/utils";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const user = await requireUser();
     const userId = user.id;
@@ -20,21 +20,45 @@ export async function GET() {
       },
     });
 
-    // Normalizar URLs: se o registro possuir uma URL absoluta (ex.: salva com NEXT_PUBLIC_BASE_URL),
-    // retornamos apenas o pathname (/api/download/xxx) para evitar apontar para hosts externos
-    // que nem sempre existem no ambiente local.
+    // Determinar base URL: preferir NEXT_PUBLIC_BASE_URL quando disponível (produção),
+    // senão derivar dos headers da requisição (útil em dev ou proxied envs).
+    const configuredBase = process.env.NEXT_PUBLIC_BASE_URL;
+    const derivedBase = (() => {
+      try {
+        const protocol =
+          req.headers.get("x-forwarded-proto") ||
+          req.headers.get("x-forwarded-proto") ||
+          "http";
+        const host =
+          req.headers.get("x-forwarded-host") ||
+          req.headers.get("host") ||
+          "localhost:3000";
+        return `${protocol}://${host}`;
+      } catch {
+        return "http://localhost:3000";
+      }
+    })();
+    const baseUrl = configuredBase
+      ? configuredBase.replace(/\/$/, "")
+      : derivedBase.replace(/\/$/, "");
+
+    // Build absolute URLs for the frontend. If img.url is already absolute, keep it.
     const normalized = images.map((img) => {
-      let url = img.url;
+      let url = img.url || "";
       try {
         if (
           typeof url === "string" &&
           (url.startsWith("http://") || url.startsWith("https://"))
         ) {
-          const parsed = new URL(url);
-          url = parsed.pathname + (parsed.search || "");
+          // already absolute
+        } else if (typeof url === "string" && url.startsWith("/")) {
+          url = `${baseUrl}${url}`;
+        } else if (typeof url === "string") {
+          // bare filename or relative path => assume /api/download/
+          url = `${baseUrl}/api/download/${encodeURIComponent(String(url))}`;
         }
       } catch {
-        // keep original
+        // fallback keep original
       }
       return { ...img, url };
     });
