@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Image as ImageIcon, LogOut, Send, Users, X, Tags } from "lucide-react";
+import { Home, LogOut, Send, Users, X, Tags, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 const menuItems = [
@@ -9,6 +9,8 @@ const menuItems = [
     { href: "/contatos", label: "Contatos", icon: Users },
     { href: "/grupos", label: "Grupos", icon: Tags },
     { href: "/imagem", label: "Upload de Imagem", icon: ImageIcon },
+    // Nota: a página de upload de imagem foi removida do menu. Uploads agora são feitos
+    // diretamente na página Enviar Mensagem. A rota de API /api/images permanece ativa.
 ];
 
 export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean; onClose?: () => void } = {}) {
