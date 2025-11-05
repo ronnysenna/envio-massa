@@ -20,29 +20,35 @@ export async function GET(req: Request) {
       },
     });
 
-    // Determinar base URL: preferir NEXT_PUBLIC_BASE_URL quando disponível (produção),
-    // senão derivar dos headers da requisição (útil em dev ou proxied envs).
-    const configuredBase = process.env.NEXT_PUBLIC_BASE_URL;
-    const derivedBase = (() => {
-      try {
-        const protocol =
-          req.headers.get("x-forwarded-proto") ||
-          req.headers.get("x-forwarded-proto") ||
-          "http";
-        const host =
-          req.headers.get("x-forwarded-host") ||
-          req.headers.get("host") ||
-          "localhost:3000";
-        return `${protocol}://${host}`;
-      } catch {
-        return "http://localhost:3000";
+    // Determine base URL. Prefer NEXT_PUBLIC_BASE_URL only when it matches the
+    // incoming Host; otherwise derive from request so local dev points to localhost.
+    const configuredBaseRaw = process.env.NEXT_PUBLIC_BASE_URL;
+    let configuredBase: string | null = null;
+    let configuredHost: string | null = null;
+    try {
+      if (configuredBaseRaw) {
+        configuredBase = configuredBaseRaw.replace(/\/$/, "");
+        configuredHost = new URL(configuredBase).host;
       }
-    })();
-    const baseUrl = configuredBase
-      ? configuredBase.replace(/\/$/, "")
-      : derivedBase.replace(/\/$/, "");
+    } catch {
+      configuredBase = null;
+      configuredHost = null;
+    }
 
-    // Build absolute URLs for the frontend. If img.url is already absolute, keep it.
+    const reqHost =
+      req.headers.get("x-forwarded-host") ||
+      req.headers.get("host") ||
+      "localhost:3000";
+    const reqProto = req.headers.get("x-forwarded-proto") || "http";
+    const derivedBase = `${reqProto}://${reqHost}`;
+
+    const useConfigured =
+      typeof configuredBase === "string" &&
+      typeof configuredHost === "string" &&
+      configuredHost === reqHost;
+    const baseUrl = useConfigured ? configuredBase : derivedBase;
+
+    // Build absolute URLs for the frontend.
     const normalized = images.map((img) => {
       let url = img.url || "";
       try {
