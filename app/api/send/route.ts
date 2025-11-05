@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Extrair apenas o caminho da URL da imagem (/api/download/filename)
+    // Extrair apenas o caminho da URL da imagem (/api/uploads/filename)
     // Se não houver imagem, usar "sem-imagem"
     let imagemPath = "sem-imagem";
     if (imageUrl && typeof imageUrl === "string") {
@@ -122,7 +122,7 @@ export async function POST(req: Request) {
       imagemUrlCompleta,
       baseUrl:
         imagemUrlCompleta !== "sem-imagem"
-          ? imagemUrlCompleta.split("/api/download/")[0]
+          ? imagemUrlCompleta.split("/api/uploads/")[0]
           : "N/A",
       messageLength: message.length,
       contactsCount: Array.isArray(contacts) ? contacts.length : 0,
