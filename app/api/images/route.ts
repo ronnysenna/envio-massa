@@ -63,7 +63,7 @@ export async function GET(req: Request) {
         } else if (typeof url === "string" && url.startsWith("/")) {
           url = `${baseUrl}${url}`;
         } else if (typeof url === "string") {
-          url = `${baseUrl}/api/download/${encodeURIComponent(String(url))}`;
+          url = `${baseUrl}/api/uploads/${encodeURIComponent(String(url))}`;
         }
       } catch {
         // fallback keep original

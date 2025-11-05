@@ -144,7 +144,7 @@ export async function POST(req: Request) {
     const dest = path.basename(result.filepath);
     // encode dest for URL safety
     const encodedDest = encodeURIComponent(dest);
-    let url = `/api/download/${encodedDest}`;
+    let url = `/api/uploads/${encodedDest}`;
 
     // Se variáveis S3 estiverem configuradas, tentar upload para S3 (import dinâmico)
     const S3_BUCKET = process.env.S3_BUCKET;
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // In production we may want to store absolute URL; in dev store relative path to /api/download
+    // In production we may want to store absolute URL; in dev store relative path to /api/uploads
     const configuredBase = process.env.NEXT_PUBLIC_BASE_URL || "";
     const isProd = process.env.NODE_ENV === "production";
     const publicUrl =

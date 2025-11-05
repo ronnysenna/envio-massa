@@ -10,21 +10,37 @@ export async function GET(
   try {
     const { filename } = await params;
 
+    // Decodifica o filename (caso contenha espaços ou caracteres especiais)
+    const decodedFilename = decodeURIComponent(String(filename || ""));
+
     // Validar nome do arquivo para evitar directory traversal
-    if (filename.includes("..") || filename.includes("/")) {
+    if (
+      !decodedFilename ||
+      decodedFilename.includes("..") ||
+      decodedFilename.includes("/")
+    ) {
       return NextResponse.json({ error: "Invalid filename" }, { status: 400 });
     }
 
     const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    const filePath = path.join(uploadsDir, filename);
 
-    // Dupla verificação de segurança
-    if (!filePath.startsWith(uploadsDir)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // Tentar múltiplos caminhos para suportar desenvolvimento e execução dentro de containers
+    const possiblePaths = [
+      path.join(uploadsDir, decodedFilename),
+      path.join("/app", "public", "uploads", decodedFilename),
+      path.join("/usr/src/app", "public", "uploads", decodedFilename),
+      path.join("/tmp", "uploads", decodedFilename),
+    ];
+
+    let filePath: string | null = null;
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        filePath = p;
+        break;
+      }
     }
 
-    // Verificar se o arquivo existe
-    if (!fs.existsSync(filePath)) {
+    if (!filePath) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
@@ -32,7 +48,7 @@ export async function GET(
     const fileBuffer = fs.readFileSync(filePath);
 
     // Determinar MIME type
-    const ext = path.extname(filename).toLowerCase();
+    const ext = path.extname(decodedFilename).toLowerCase();
     let contentType = "application/octet-stream";
     if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
     else if (ext === ".png") contentType = "image/png";
