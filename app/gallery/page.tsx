@@ -42,7 +42,7 @@ export default function GalleryPage() {
 
     const downloadImage = (url: string, filename: string) => {
         const link = document.createElement("a");
-        link.href = url;
+        link.href = encodeURI(url);
         link.download = filename;
         document.body.appendChild(link);
         link.click();
@@ -92,7 +92,7 @@ export default function GalleryPage() {
                                 {/* Image */}
                                 <div className="relative w-full aspect-square bg-slate-700 overflow-hidden group">
                                     <img
-                                        src={img.url}
+                                        src={encodeURI(img.url)}
                                         alt={img.filename}
                                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                         onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }}
@@ -100,7 +100,7 @@ export default function GalleryPage() {
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
                                         <button
                                             type="button"
-                                            onClick={() => setSelectedImage(img.url)}
+                                            onClick={() => setSelectedImage(encodeURI(img.url))}
                                             className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                                             title="Visualizar em tamanho real"
                                         >
@@ -133,7 +133,7 @@ export default function GalleryPage() {
                                         </button>
                                         <button
                                             type="button"
-                                            onClick={() => copyToClipboard(img.url)}
+                                            onClick={() => copyToClipboard(encodeURI(img.url))}
                                             className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs py-2 px-3 rounded flex items-center justify-center gap-1 transition-colors"
                                             title="Copiar URL"
                                         >
