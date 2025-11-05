@@ -1,26 +1,33 @@
 "use client";
 
-import { Home, Image as ImageIcon, LogOut, Send, Users, X } from "lucide-react";
+import { Home, Image as ImageIcon, LogOut, Send, Users, X, Tags } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { logout } from "@/lib/auth";
-
+import { usePathname } from "next/navigation";
 const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/enviar", label: "Enviar Mensagem", icon: Send },
-    { href: "/contatos", label: "Exportar Contatos", icon: Users },
+    { href: "/contatos", label: "Contatos", icon: Users },
+    { href: "/grupos", label: "Grupos", icon: Tags },
     { href: "/imagem", label: "Upload de Imagem", icon: ImageIcon },
 ];
 
 export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean; onClose?: () => void } = {}) {
     const pathname = usePathname();
-    const router = useRouter();
 
-    const handleLogout = () => {
-        logout();
-        router.push("/login");
-        // fechar overlay mobile se presente
-        onClose?.();
+    const handleLogout = async () => {
+        try {
+            // Call logout API to clear the JWT cookie
+            await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: 'include',
+            });
+        } catch (error) {
+            console.error("Logout error:", error);
+        } finally {
+            // Force redirect to login regardless of API call result
+            window.location.replace("/login");
+            onClose?.();
+        }
     };
 
     const sidebarContent = (

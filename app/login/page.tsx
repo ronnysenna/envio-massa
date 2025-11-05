@@ -18,6 +18,7 @@ export default function LoginPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, password }),
+                credentials: 'include', // Important: include cookies
             });
             const data = await res.json();
             if (!res.ok) {
@@ -25,7 +26,8 @@ export default function LoginPage() {
                 return;
             }
             // successful login (cookie set by server)
-            window.location.href = "/dashboard";
+            // Force a hard refresh to ensure middleware picks up the new cookie
+            window.location.replace("/dashboard");
         } catch (err) {
             console.error(err);
             setError("Erro de conexão");
