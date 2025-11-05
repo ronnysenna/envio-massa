@@ -3,8 +3,6 @@ import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/serverAuth";
 import { getErrorMessage } from "@/lib/utils";
 
-// Note: this file already requires user and filters groups by userId (no additional changes required)
-
 export async function GET(req: Request) {
   try {
     const user = await requireUser();

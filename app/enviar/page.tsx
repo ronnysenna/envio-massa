@@ -131,7 +131,7 @@ export default function EnviarPage() {
 
     const openGallery = async () => {
         try {
-            const res = await fetch('/api/images', { credentials: 'include' });
+            const res = await fetch('/api/images');
             if (!res.ok) return;
             const data = await res.json();
             setGalleryImages(data.images || []);

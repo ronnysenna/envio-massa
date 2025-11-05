@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { getErrorMessage } from "@/lib/utils";
 import { requireUser } from "@/lib/serverAuth";
+import { getErrorMessage } from "@/lib/utils";
 
 export async function GET() {
   try {
@@ -17,7 +17,6 @@ export async function GET() {
         url: true,
         filename: true,
         createdAt: true,
-        userId: true,
       },
     });
     return NextResponse.json({ images });

@@ -60,14 +60,7 @@ export async function POST(req: Request) {
     // verificar contato existente pelo telefone
     const existing = await prisma.contact.findUnique({ where: { telefone } });
     if (existing) {
-      if (existing.userId !== userId) {
-        // Não reassociar telefones que pertencem a outro usuário
-        return NextResponse.json(
-          { error: "Telefone já cadastrado por outro usuário" },
-          { status: 400 }
-        );
-      }
-      // atualizar nome para o mesmo usuário
+      // atualizar nome / reassociar ao usuário atual
       const updated = await prisma.contact.update({
         where: { id: existing.id },
         data: { nome, userId },
