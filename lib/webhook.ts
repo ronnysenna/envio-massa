@@ -18,7 +18,11 @@ export interface MessagePayload {
 
 export async function sendMessage(
   payload: MessagePayload,
-  options?: { includeContacts?: boolean; contacts?: Contact[] }
+  options?: {
+    includeContacts?: boolean;
+    contacts?: Contact[];
+    groupIds?: number[];
+  }
 ) {
   try {
     // construir corpo que será enviado para /api/send
@@ -27,27 +31,39 @@ export async function sendMessage(
       imageUrl: payload.imageUrl,
     };
 
-    if (
-      options?.includeContacts &&
-      Array.isArray(options.contacts) &&
-      options.contacts.length > 0
-    ) {
-      body.contacts = options.contacts.map((c) => ({
-        nome: c.nome,
-        telefone: c.telefone,
-      }));
+    // Suporta envio de contatos diretamente (cliente) ou ids de grupos (servidor monta a lista)
+    if (options?.includeContacts) {
+      const contactsArr = Array.isArray(options.contacts)
+        ? options.contacts
+        : [];
+      if (contactsArr.length > 0) {
+        body.contacts = contactsArr.map((c) => ({
+          nome: c.nome,
+          telefone: c.telefone,
+        }));
+      }
+    }
+
+    if (Array.isArray(options?.groupIds) && options.groupIds.length > 0) {
+      body.groupIds = options.groupIds;
     }
 
     // Envia para rota interna que por sua vez encaminha ao webhook
     const res = await fetch("/api/send", {
       method: "POST",
+      // enviar cookies (token) para que o servidor possa autenticar via requireUser
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Erro" }));
-      return { success: false, error: err.error || "Erro ao enviar" };
+      const parsed = await res.json().catch(() => null);
+      const errMsg =
+        parsed && typeof parsed === "object" && "error" in parsed
+          ? (parsed as { error: string }).error
+          : "Erro ao enviar";
+      return { success: false, error: errMsg };
     }
 
     const data = await res.json();

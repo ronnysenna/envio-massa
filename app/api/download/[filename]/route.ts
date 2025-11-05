@@ -1,11 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 
 /**
  * GET /api/download/[filename]
- * Rota pública para download direto de imagens
- * Sem autenticação, sem verificações, apenas serve o arquivo
+ * Serve only files which are registered in the DB (image record). This prevents
+ * arbitrary files from being downloaded just by guessing a filename.
  */
 export async function GET(
   _request: Request,
@@ -17,6 +18,21 @@ export async function GET(
     // Validação básica de segurança
     if (!filename || filename.includes("..") || filename.includes("/")) {
       return NextResponse.json({ error: "Invalid filename" }, { status: 400 });
+    }
+
+    // Verificar se existe um registro de imagem no DB que corresponda a esse filename.
+    // O campo `filename` no DB pode ser o nome original; o URL salvo contém o nome final
+    // (basename). Procuramos por registros cujo `filename` seja igual ao solicitado
+    // ou cujo `url` contenha o nome do arquivo.
+    const image = await prisma.image.findFirst({
+      where: {
+        OR: [{ filename: filename }, { url: { contains: `/${filename}` } }],
+      },
+    });
+
+    if (!image) {
+      // Não permitir acesso a arquivos que não estão registrados no banco
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
     // Tentar múltiplos caminhos para suportar desenvolvimento e produção

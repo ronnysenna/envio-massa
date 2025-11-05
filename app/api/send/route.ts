@@ -1,3 +1,4 @@
+import prisma from "@/lib/prisma";
 import axios from "axios";
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/serverAuth";
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { message, imageUrl, contacts } = body;
+    const { message, imageUrl, contacts, groupIds } = body;
     if (!message) {
       return NextResponse.json(
         { error: "Invalid payload: message is required" },
@@ -66,15 +67,53 @@ export async function POST(req: Request) {
       userId: user.id,
     };
 
-    // Se contatos foram fornecidos, incluir no payload como objeto estruturado
-    if (Array.isArray(contacts) && contacts.length > 0) {
+    // Se groupIds foram fornecidos, buscar contatos desses grupos (garantindo pertencimento ao usuário)
+    if (Array.isArray(groupIds) && groupIds.length > 0) {
+      // normalizar ids para números
+      const groupIdsNum = groupIds
+        .map((g: unknown) => Number(g))
+        .filter((n: number) => !Number.isNaN(n));
+
+      const contactsFromGroups = await prisma.contact.findMany({
+        where: {
+          groups: {
+            some: {
+              group: {
+                id: { in: groupIdsNum },
+                userId: user.id,
+              },
+            },
+          },
+        },
+        select: { nome: true, telefone: true },
+      });
+
+      // deduplicar por telefone (enforce unique list)
+      const seen = new Set<string>();
+      const uniqueList: Array<{ nome: string; telefone: string }> = [];
+      for (const c of contactsFromGroups) {
+        if (!c || !c.telefone) continue;
+        if (!seen.has(c.telefone)) {
+          seen.add(c.telefone);
+          uniqueList.push({ nome: c.nome, telefone: c.telefone });
+        }
+      }
+
       payload.selectedContacts = {
-        total: contacts.length,
-        list: contacts.map((c: Record<string, unknown>) => ({
-          nome: c.nome,
-          telefone: c.telefone,
-        })),
+        total: uniqueList.length,
+        list: uniqueList,
       };
+    } else {
+      // Se contatos foram fornecidos diretamente, incluir no payload como objeto estruturado
+      if (Array.isArray(contacts) && contacts.length > 0) {
+        payload.selectedContacts = {
+          total: contacts.length,
+          list: contacts.map((c: Record<string, unknown>) => ({
+            nome: c.nome,
+            telefone: c.telefone,
+          })),
+        };
+      }
     }
 
     // Log para debug (remover em produção se necessário)

@@ -8,18 +8,19 @@ export async function GET() {
     const user = await requireUser();
     const userId = user.id;
 
-    const images = await prisma.image.findMany({
+    const groups = await prisma.group.findMany({
       where: { userId },
-      orderBy: { createdAt: "desc" },
-      take: 50,
       select: {
         id: true,
-        url: true,
-        filename: true,
-        createdAt: true,
+        nome: true,
+        _count: {
+          select: { contacts: true },
+        },
       },
+      orderBy: { nome: "asc" },
     });
-    return NextResponse.json({ images });
+
+    return NextResponse.json({ groups });
   } catch (err) {
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }

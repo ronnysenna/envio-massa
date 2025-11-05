@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { Upload } from "lucide-react";
+import EditContactModal from "@/components/EditContactModal";
+import { Upload, Edit2, Trash2 } from "lucide-react";
 import type { Contact } from "@/lib/webhook";
 import { importFromCSV, importFromExcel } from "@/lib/fileUtils";
 import { useToast } from "@/components/ToastProvider";
@@ -16,6 +17,9 @@ export default function ContatosPage() {
     const [manualName, setManualName] = useState("");
     const [manualPhone, setManualPhone] = useState("");
     const [manualPhoneValid, setManualPhoneValid] = useState<boolean>(false);
+    // Estados para modal de edição
+    const [editingContact, setEditingContact] = useState<Contact | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     // normaliza removendo tudo que não for dígito
     const normalizePhone = (v: string) => v.replace(/\D/g, "");
@@ -145,6 +149,71 @@ export default function ContatosPage() {
         setManualPhone('');
     };
 
+    // Função para abrir modal de edição
+    const handleEditClick = (contact: Contact) => {
+        setEditingContact(contact);
+        setIsEditModalOpen(true);
+    };
+
+    // Função para fechar modal de edição
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
+        setEditingContact(null);
+    };
+
+    // Função para salvar contato editado
+    const handleSaveContact = async (updatedContact: Contact) => {
+        try {
+            const res = await fetch(`/api/contacts/${updatedContact.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    nome: updatedContact.nome,
+                    telefone: updatedContact.telefone,
+                    email: updatedContact.email,
+                }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showToast({ type: 'error', message: data.error || 'Falha ao editar contato.' });
+                return;
+            }
+
+            showToast({ type: 'success', message: 'Contato editado com sucesso.' });
+            fetchContacts();
+        } catch (err) {
+            console.error('Erro ao editar contato:', err);
+            showToast({ type: 'error', message: 'Erro ao editar contato.' });
+        }
+    };
+
+    // Função para deletar contato
+    const handleDeleteContact = async (contact: Contact) => {
+        const confirmed = window.confirm(`Tem certeza que deseja deletar o contato "${contact.nome}"?`);
+        if (!confirmed) return;
+
+        try {
+            const res = await fetch(`/api/contacts/${contact.id}`, {
+                method: 'DELETE',
+                credentials: 'include',
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showToast({ type: 'error', message: data.error || 'Falha ao deletar contato.' });
+                return;
+            }
+
+            showToast({ type: 'success', message: 'Contato deletado com sucesso.' });
+            fetchContacts();
+        } catch (err) {
+            console.error('Erro ao deletar contato:', err);
+            showToast({ type: 'error', message: 'Erro ao deletar contato.' });
+        }
+    };
+
     return (
         <ProtectedRoute>
             <main className="flex-1 p-6 bg-transparent min-h-screen">
@@ -234,19 +303,40 @@ export default function ContatosPage() {
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Nome</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Telefone</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700">Email</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
-                                    <tr><td colSpan={3} className="p-4 text-sm text-gray-600">Carregando...</td></tr>
+                                    <tr><td colSpan={4} className="p-4 text-sm text-gray-600">Carregando...</td></tr>
                                 ) : contacts.length === 0 ? (
-                                    <tr><td colSpan={3} className="p-4 text-sm text-gray-600">Nenhum contato encontrado.</td></tr>
+                                    <tr><td colSpan={4} className="p-4 text-sm text-gray-600">Nenhum contato encontrado.</td></tr>
                                 ) : (
                                     contacts.map((c, i) => (
                                         <tr key={`${c.id ?? c.telefone ?? i}`} className="hover:bg-gray-50">
                                             <td className="px-4 py-3 text-sm text-gray-900">{c.nome}</td>
                                             <td className="px-4 py-3 text-sm text-gray-700">{c.telefone}</td>
                                             <td className="px-4 py-3 text-sm text-gray-700">{c.email}</td>
+                                            <td className="px-4 py-3 text-center">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEditClick(c)}
+                                                        className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                                        title="Editar contato"
+                                                    >
+                                                        <Edit2 size={16} />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteContact(c)}
+                                                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors"
+                                                        title="Deletar contato"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))
                                 )}
@@ -255,6 +345,14 @@ export default function ContatosPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Modal de Edição */}
+            <EditContactModal
+                contact={editingContact}
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                onSave={handleSaveContact}
+            />
         </ProtectedRoute>
     );
 }

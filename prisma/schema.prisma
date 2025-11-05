@@ -14,17 +14,44 @@ model User {
     createdAt DateTime   @default(now())
     contacts  Contact[]
     images    Image[]
+    groups    Group[]
     selection Selection?
 }
 
 model Contact {
-    id        Int      @id @default(autoincrement())
+    id        Int            @id @default(autoincrement())
     nome      String
-    telefone  String   @unique
+    telefone  String         @unique
+    email     String?
     userId    Int
-    user      User     @relation(fields: [userId], references: [id])
+    user      User           @relation(fields: [userId], references: [id])
+    createdAt DateTime       @default(now())
+    updatedAt DateTime       @updatedAt
+    groups    ContactGroup[]
+}
+
+model Group {
+    id        Int            @id @default(autoincrement())
+    nome      String
+    descricao String?
+    userId    Int
+    user      User           @relation(fields: [userId], references: [id])
+    createdAt DateTime       @default(now())
+    updatedAt DateTime       @updatedAt
+    contacts  ContactGroup[]
+
+    @@unique([userId, nome])
+}
+
+model ContactGroup {
+    id        Int      @id @default(autoincrement())
+    contactId Int
+    groupId   Int
+    contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+    group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
     createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+
+    @@unique([contactId, groupId])
 }
 
 model Image {
