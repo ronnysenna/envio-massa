@@ -3,6 +3,7 @@
 // biome-ignore assist/source/organizeImports: false positive
 import { useState } from "react";
 import { LogIn } from "lucide-react";
+import Brand from "../../components/Brand";
 
 export default function LoginPage() {
     const [username, setUsername] = useState("");
@@ -43,7 +44,7 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                <h1 className="text-3xl font-bold text-center mb-2 text-white">Envio em Massa</h1>
+                <h1 className="text-3xl font-bold text-center mb-2"><Brand /></h1>
                 <p className="text-center text-gray-300 mb-6">Faça login para continuar</p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">

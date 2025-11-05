@@ -3,6 +3,7 @@
 import { Home, LogOut, Send, Users, X, Tags, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/enviar", label: "Enviar Mensagem", icon: Send },
@@ -44,8 +45,11 @@ export default function Sidebar({ mobileOpen, onClose }: { mobileOpen?: boolean;
                 <X size={16} />
             </button>
             <div className="p-6 border-b border-[#0b1220]">
-                <h1 className="text-lg font-bold text-white">Envio em Massa</h1>
-                <div className="text-xs text-gray-300 mt-1">Envie campanhas facilmente</div>
+                <h1 className="text-2xl font-bold text-white">
+                    <span className="text-blue-500">Envio</span>
+                    <span className="mx-1 text-yellow-600 font-extrabold">Expresse</span>
+                </h1>
+                <div className="text-xs text-gray-300 mt-1">Envie mensagens facilmente</div>
             </div>
 
             <nav className="flex-1 py-6">
