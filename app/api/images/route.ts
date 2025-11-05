@@ -46,25 +46,23 @@ export async function GET(req: Request) {
       typeof configuredBase === "string" &&
       typeof configuredHost === "string" &&
       configuredHost === reqHost;
-    const baseUrl = useConfigured ? configuredBase : derivedBase;
+    const base: string =
+      useConfigured && configuredBase ? configuredBase : derivedBase;
 
-    // Build absolute URLs for the frontend.
+    // Build absolute URLs for the frontend. Always point to our base host + pathname
     const normalized = images.map((img) => {
       let url = img.url || "";
       try {
-        if (
-          typeof url === "string" &&
-          (url.startsWith("http://") || url.startsWith("https://"))
-        ) {
-          // already absolute
-        } else if (typeof url === "string" && url.startsWith("/")) {
-          url = `${baseUrl}${url}`;
-        } else if (typeof url === "string") {
-          // bare filename or relative path => assume /api/download/
-          url = `${baseUrl}/api/download/${encodeURIComponent(String(url))}`;
-        }
+        // Try to parse stored url relative to base to get a stable pathname
+        const parsed = new URL(url, base);
+        const pathname = parsed.pathname + (parsed.search || "");
+        url = `${base.replace(/\/$/, "")}${pathname}`;
       } catch {
-        // fallback keep original
+        // Fallback: use filename stored in DB to build download path
+        const name = img.filename || String(url || "");
+        url = `${base.replace(/\/$/, "")}/api/download/${encodeURIComponent(
+          name
+        )}`;
       }
       return { ...img, url };
     });
