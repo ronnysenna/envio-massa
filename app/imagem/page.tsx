@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import {
     Upload,
     Image as ImageIcon,
@@ -182,7 +181,7 @@ export default function ImagemPage() {
                             <div className="mt-6">
                                 <div className="mb-2 text-gray-700 font-semibold flex items-center gap-2"><ImageIcon size={20} /> Preview da Imagem</div>
                                 <div className="relative max-w-full aspect-square bg-white p-2 rounded-lg border border-gray-300 flex items-center justify-center overflow-hidden">
-                                    <Image src={imagePreview} alt="Preview" fill className="w-full h-full object-contain rounded-lg" />
+                                    <img src={imagePreview || ''} alt="Preview" className="w-full h-full object-contain rounded-lg" onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }} />
                                 </div>
                                 <div className="flex items-center gap-4 mt-2">
                                     <button type="button" onClick={() => { setImageFile(null); setImagePreview(null); setUploadedUrl(null); }} className="text-sm text-red-600 hover:text-red-700">Remover imagem</button>
@@ -206,12 +205,7 @@ export default function ImagemPage() {
                             {images.map((img) => (
                                 <div key={img.id} className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition">
                                     <button type="button" onClick={() => openPreview(img.url)} className="block w-full aspect-square bg-gray-100 dark:bg-gray-900 hover:opacity-80 transition overflow-hidden group relative">
-                                        <Image
-                                            src={encodeURI(img.url)}
-                                            alt={img.filename}
-                                            fill
-                                            className="object-cover group-hover:scale-105 transition"
-                                        />
+                                        <img src={encodeURI(img.url)} alt={img.filename} className="w-full h-full object-cover group-hover:scale-105 transition" onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }} />
                                     </button>
                                     <div className="p-3">
                                         <div className="text-xs text-gray-600 dark:text-gray-400 truncate mb-2 font-medium">{img.filename}</div>
@@ -245,7 +239,7 @@ export default function ImagemPage() {
                                         ✕
                                     </button>
                                     <div className="relative w-[80vw] h-[80vh] md:w-[60vw] md:h-[60vh] bg-black flex items-center justify-center">
-                                        <Image src={encodeURI(previewUrl)} alt="Preview grande" fill className="object-contain" />
+                                        <img src={encodeURI(previewUrl || '')} alt="Preview grande" className="max-h-[80vh] max-w-full object-contain" onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }} />
                                     </div>
                                 </div>
                             </div>

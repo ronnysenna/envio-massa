@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
 import { Download, Eye, Copy, Check } from "lucide-react";
 
 interface GalleryImage {
@@ -92,11 +91,11 @@ export default function GalleryPage() {
                             >
                                 {/* Image */}
                                 <div className="relative w-full aspect-square bg-slate-700 overflow-hidden group">
-                                    <Image
+                                    <img
                                         src={img.url}
                                         alt={img.filename}
-                                        fill
-                                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }}
                                     />
                                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
                                         <button
@@ -182,11 +181,11 @@ export default function GalleryPage() {
                                 ✕
                             </button>
                             <div className="relative w-full h-full flex items-center justify-center">
-                                <Image
-                                    src={selectedImage}
+                                <img
+                                    src={selectedImage || ''}
                                     alt="Preview"
-                                    fill
-                                    className="object-contain"
+                                    className="max-h-[80vh] max-w-full object-contain"
+                                    onError={(e) => { try { (e.currentTarget as HTMLImageElement).src = '/file.svg'; } catch { } }}
                                 />
                             </div>
                         </div>
