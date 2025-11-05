@@ -3,6 +3,8 @@
 // biome-ignore assist/source/organizeImports: false positive
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { UserPlus } from "lucide-react";
+import Brand from "../../components/Brand";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -35,7 +37,14 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-800 to-gray-900 text-gray-100">
       <div className="bg-white/5 backdrop-blur-sm p-8 rounded-xl shadow-xl w-full max-w-md border border-white/6">
-        <h1 className="text-2xl font-bold text-center mb-4 text-white">Registrar</h1>
+        <div className="flex justify-center mb-6">
+          <div className="bg-blue-600 p-4 rounded-full">
+            <UserPlus size={32} className="text-white" />
+          </div>
+        </div>
+
+        <h1 className="text-3xl font-bold text-center mb-2"><Brand /></h1>
+        <p className="text-center text-gray-300 mb-6">Crie sua conta para continuar</p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -78,6 +87,12 @@ export default function RegisterPage() {
             Criar conta
           </button>
         </form>
+
+        <div className="mt-6 text-center text-sm text-gray-300">
+          <p className="mt-2">
+            Já tem conta? <a href="/login" className="text-blue-300 hover:underline">Fazer login</a>
+          </p>
+        </div>
       </div>
     </div>
   );

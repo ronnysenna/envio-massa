@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "../../app/globals.css";
 
 export const metadata: Metadata = {
-    title: "Login - Envio em Massa",
+    title: "Login - Envio Expresse",
 };
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {

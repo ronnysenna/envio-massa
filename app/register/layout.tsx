@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "../../app/globals.css";
 
 export const metadata: Metadata = {
-    title: "Registrar - Envio em Massa",
+    title: "Registrar - Envio Expresse",
 };
 
 export default function RegisterLayout({ children }: { children: React.ReactNode }) {
