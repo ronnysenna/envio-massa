@@ -1,7 +1,7 @@
 "use client";
 
 import { Edit2, Trash2, Upload } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import EditContactModal from "@/components/EditContactModal";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useToast } from "@/components/ToastProvider";
@@ -22,7 +22,7 @@ export default function ContatosPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   // paginação
   const [page, setPage] = useState<number>(1);
-  const [perPage, setPerPage] = useState<number>(50);
+  const [perPage, setPerPage] = useState<number>(25);
   const [total, setTotal] = useState<number>(0);
 
   // normaliza removendo tudo que não for dígito
@@ -48,29 +48,44 @@ export default function ContatosPage() {
     setManualPhoneValid(digits.length === 10 || digits.length === 11);
   };
 
+  // refs para evitar efeitos colaterais quando fetch ocorre
+  const pageRef = useRef<number>(page);
+  const perPageRef = useRef<number>(perPage);
+
+  // sincroniza refs com o estado
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+  useEffect(() => {
+    perPageRef.current = perPage;
+  }, [perPage]);
+
   const fetchContacts = useCallback(
-    async (query = "", pageArg = page, limitArg = perPage) => {
+    async (query = "", pageArg?: number, limitArg?: number) => {
+      console.debug("fetchContacts called", { query, pageArg, limitArg, pageRef: pageRef.current, perPageRef: perPageRef.current });
       try {
         setLoading(true);
-        const pageToUse = pageArg ?? 1;
-        const limitToUse = limitArg ?? 50;
+        const pageToUse = pageArg ?? pageRef.current ?? 1;
+        const limitToUse = limitArg ?? perPageRef.current ?? 25;
         const q = new URLSearchParams({
           search: query || "",
           page: String(pageToUse),
           limit: String(limitToUse),
         });
+
         const res = await fetch(`/api/contacts?${q.toString()}`, {
           credentials: "include",
         });
+
         if (!res.ok) {
           showToast({ type: "error", message: "Falha ao buscar contatos." });
           return;
         }
+
         const data = await res.json();
+        // atualiza apenas os dados — não forçar alteração do estado de página/limit
         setContacts(data.contacts || []);
         setTotal(Number(data.total ?? 0));
-        setPage(Number(data.page ?? pageToUse));
-        setPerPage(Number(data.limit ?? limitToUse));
       } catch (err) {
         console.error("fetchContacts error", err);
         showToast({ type: "error", message: "Erro ao carregar contatos." });
@@ -78,7 +93,7 @@ export default function ContatosPage() {
         setLoading(false);
       }
     },
-    [showToast, page, perPage],
+    [showToast],
   );
 
   useEffect(() => {
@@ -265,6 +280,11 @@ export default function ContatosPage() {
     }
   };
 
+  // sincroniza refs quando estados mudam
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
   return (
     <ProtectedRoute>
       <main className="flex-1 p-6 bg-transparent min-h-screen">
@@ -370,8 +390,8 @@ export default function ContatosPage() {
           </div>
 
           {/* Table */}
-          {/* Controles de paginação / limite por página */}
-          <div className="flex items-center justify-between p-4 gap-4">
+          {/* Controle de limite por página (mantido no topo) */}
+          <div className="flex items-center p-4 gap-4">
             <div className="flex items-center gap-2">
               <label className="text-sm text-gray-600">Mostrar por página:</label>
               <select
@@ -380,50 +400,13 @@ export default function ContatosPage() {
                   const v = Number(e.target.value);
                   setPerPage(v);
                   setPage(1);
-                  fetchContacts(search.trim(), 1, v);
                 }}
                 className="px-2 py-1 border rounded"
               >
+                <option value={25}>25</option>
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                disabled={page <= 1}
-                onClick={() => {
-                  const np = Math.max(1, page - 1);
-                  setPage(np);
-                  fetchContacts(search.trim(), np, perPage);
-                }}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Anterior
-              </button>
-
-              <div className="text-sm text-gray-700">
-                {total === 0
-                  ? "0 contatos"
-                  : `${(page - 1) * perPage + 1} - ${Math.min(
-                    total,
-                    page * perPage,
-                  )} de ${total}`}
-              </div>
-
-              <button
-                type="button"
-                disabled={page * perPage >= total}
-                onClick={() => {
-                  const np = page + 1;
-                  setPage(np);
-                  fetchContacts(search.trim(), np, perPage);
-                }}
-                className="px-3 py-1 border rounded disabled:opacity-50"
-              >
-                Próxima
-              </button>
             </div>
           </div>
 
@@ -498,6 +481,46 @@ export default function ContatosPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Footer de paginação - abaixo da tabela */}
+          <div className="flex items-center justify-between p-4 gap-4 mt-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={page <= 1 || loading}
+                onClick={() => {
+                  const np = Math.max(1, page - 1);
+                  console.debug("navigate previous", { from: page, to: np, perPage });
+                  setPage(np);
+                }}
+                className="px-3 py-1 border rounded disabled:opacity-50"
+              >
+                Anterior
+              </button>
+
+              <div className="text-sm text-gray-700">
+                {total === 0
+                  ? "0 contatos"
+                  : `${(page - 1) * perPage + 1} - ${Math.min(
+                    total,
+                    page * perPage,
+                  )} de ${total}`}
+              </div>
+
+              <button
+                type="button"
+                disabled={page * perPage >= total || loading}
+                onClick={() => {
+                  const np = page + 1;
+                  console.debug("navigate next", { from: page, to: np, perPage });
+                  setPage(np);
+                }}
+                className="px-3 py-1 border rounded disabled:opacity-50"
+              >
+                Próxima
+              </button>
+            </div>
           </div>
         </div>
       </main>
