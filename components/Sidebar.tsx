@@ -61,7 +61,7 @@ export default function Sidebar({
       <div className="p-6 border-b border-[#0b1220]">
         <h1 className="text-2xl font-bold text-white">
           <span className="text-blue-500">Envio</span>
-          <span className="mx-1 text-yellow-600 font-extrabold">Expresse</span>
+          <span className="mx-1 text-yellow-600 font-extrabold">Express</span>
         </h1>
         <div className="text-xs text-gray-300 mt-1">
           Envie mensagens facilmente

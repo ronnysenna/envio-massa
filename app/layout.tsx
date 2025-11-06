@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Envio Expresse",
+  title: "Envio Express",
   description: "Sistema de envio em massa de mensagens",
   icons: {
     icon: "/favicon.ico",

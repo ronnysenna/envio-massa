@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "../../app/globals.css";
 
 export const metadata: Metadata = {
-  title: "Registrar - Envio Expresse",
+  title: "Registrar - Envio Express",
 };
 
 export default function RegisterLayout({

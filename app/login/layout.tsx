@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "../../app/globals.css";
 
 export const metadata: Metadata = {
-  title: "Login - Envio Expresse",
+  title: "Login - Envio Express",
 };
 
 export default function LoginLayout({
