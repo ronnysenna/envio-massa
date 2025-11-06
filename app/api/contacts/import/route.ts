@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
-import busboy from "busboy";
 import type { Readable } from "node:stream";
+import busboy from "busboy";
+import { NextResponse } from "next/server";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/serverAuth";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -18,8 +18,8 @@ async function parseMultipart(req: Request) {
         headers: headersObj as Record<string, string>,
       }) as unknown;
       const bb = _bb as {
-        on: (...args: any[]) => void;
-        end: (...args: any[]) => void;
+        on: (...args: unknown[]) => void;
+        end: (...args: unknown[]) => void;
       };
       const fileBuffer: Buffer[] = [];
       let filename = "";
@@ -32,12 +32,12 @@ async function parseMultipart(req: Request) {
           file.on("end", () => {
             /* noop */
           });
-        }
+        },
       );
 
       bb.on("error", (e: Error) => reject(e));
       bb.on("finish", () =>
-        resolve({ fileBuffer: Buffer.concat(fileBuffer), filename })
+        resolve({ fileBuffer: Buffer.concat(fileBuffer), filename }),
       );
 
       // em alguns ambientes o body já está disponível como arrayBuffer
@@ -47,7 +47,7 @@ async function parseMultipart(req: Request) {
           bb.end(Buffer.from(buf));
         })
         .catch((e) => reject(e));
-    }
+    },
   );
 }
 
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
               acc[key.toLowerCase()] = String(row[key] ?? "").trim();
               return acc;
             },
-            {}
+            {},
           );
           return {
             nome: keys.nome || "",
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
               acc[key.toLowerCase()] = String(row[key] ?? "").trim();
               return acc;
             },
-            {}
+            {},
           );
           return {
             nome: keys.nome || "",

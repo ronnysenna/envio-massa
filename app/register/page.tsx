@@ -43,8 +43,12 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-2"><Brand /></h1>
-        <p className="text-center text-gray-300 mb-6">Crie sua conta para continuar</p>
+        <h1 className="text-3xl font-bold text-center mb-2">
+          <Brand />
+        </h1>
+        <p className="text-center text-gray-300 mb-6">
+          Crie sua conta para continuar
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -90,7 +94,10 @@ export default function RegisterPage() {
 
         <div className="mt-6 text-center text-sm text-gray-300">
           <p className="mt-2">
-            Já tem conta? <a href="/login" className="text-blue-300 hover:underline">Fazer login</a>
+            Já tem conta?{" "}
+            <a href="/login" className="text-blue-300 hover:underline">
+              Fazer login
+            </a>
           </p>
         </div>
       </div>

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.ico",
   },
-  viewport: 'width=device-width,initial-scale=1',
+  viewport: "width=device-width,initial-scale=1",
 };
 
 export default function RootLayout({
@@ -30,7 +30,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-(--bg) text-(--text) overflow-x-hidden`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-(--bg) text-(--text) overflow-x-hidden`}
+      >
         <ClientProviders>
           <LayoutShell>{children}</LayoutShell>
         </ClientProviders>

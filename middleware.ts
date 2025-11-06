@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 // Função para verificar JWT no Edge Runtime (sem crypto do Node.js)
 function verifyJWT(token: string) {

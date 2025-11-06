@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     if (!Array.isArray(contacts) || contacts.length === 0) {
       return NextResponse.json(
         { inserted: 0, updated: 0, message: "Nenhum contato recebido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
