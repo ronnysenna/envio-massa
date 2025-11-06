@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const token = jwt.sign(
       { userId: user.id, username: user.username },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     const res = NextResponse.json({ id: user.id, username: user.username });
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
   } catch (unknownErr) {
     return NextResponse.json(
       { error: getErrorMessage(unknownErr) },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

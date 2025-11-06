@@ -1,13 +1,13 @@
-import { NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/serverAuth";
 import { getErrorMessage } from "@/lib/utils";
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const resolvedParams = await params;
@@ -20,7 +20,7 @@ export async function DELETE(
     if (!image)
       return NextResponse.json(
         { error: "Imagem não encontrada" },
-        { status: 404 }
+        { status: 404 },
       );
 
     // Only owner can delete
@@ -45,10 +45,10 @@ export async function DELETE(
             const { S3Client, DeleteObjectCommand } = s3Mod;
             const s3 = new S3Client({ region: S3_REGION });
             // attempt to extract key from URL
-            const key = image.url.split("/" + S3_BUCKET + "/").pop();
+            const key = image.url.split(`/${S3_BUCKET}/`).pop();
             if (key)
               await s3.send(
-                new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key })
+                new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }),
               );
           } catch (s3err) {
             // ignore s3 delete errors

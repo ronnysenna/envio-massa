@@ -1,6 +1,6 @@
-import prisma from "@/lib/prisma";
 import axios from "axios";
 import { NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/serverAuth";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     if (!WEBHOOK_URL) {
       return NextResponse.json(
         { error: "WEBHOOK_URL not configured on server" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     if (!message) {
       return NextResponse.json(
         { error: "Invalid payload: message is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json(
         { success: true, status: response.status, data: response.data },
-        { status: 200 }
+        { status: 200 },
       );
     } catch (axiosErr: unknown) {
       // if n8n responded with an error status, forward that information
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
           status: upstreamStatus,
           data: upstreamData,
         },
-        { status: upstreamStatus }
+        { status: upstreamStatus },
       );
     }
   } catch (err) {

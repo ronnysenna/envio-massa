@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/serverAuth";
 import prisma from "@/lib/prisma";
+import { requireUser } from "@/lib/serverAuth";
 
 export async function GET() {
   const user = await requireUser();
@@ -13,12 +13,14 @@ export async function GET() {
 export async function POST(req: Request) {
   const user = await requireUser();
   const body = await req.json().catch(() => ({}));
-  const selectedIds = Array.isArray(body.selectedIds) ? body.selectedIds : [];
+  const selectedIds = Array.isArray(body.selectedIds)
+    ? (body.selectedIds as unknown[])
+    : [];
 
   // basic validation: ensure array of numbers
-  const normalized = selectedIds
-    .map((v: any) => Number(v))
-    .filter((n: number) => !Number.isNaN(n));
+  const normalized: number[] = selectedIds
+    .map((v) => Number(v))
+    .filter((n) => !Number.isNaN(n));
 
   const upsert = await prisma.selection.upsert({
     where: { userId: user.id },

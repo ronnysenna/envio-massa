@@ -41,7 +41,7 @@ export async function GET() {
   } catch (err) {
     return NextResponse.json(
       { authenticated: false, error: getErrorMessage(err) },
-      { status: 401 }
+      { status: 401 },
     );
   }
 }

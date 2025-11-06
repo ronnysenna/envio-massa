@@ -18,7 +18,7 @@ export async function POST(_req: Request, context: NextContextWithParams) {
     if (!Array.isArray(contactIds)) {
       return NextResponse.json(
         { error: "contactIds deve ser um array" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,7 +28,7 @@ export async function POST(_req: Request, context: NextContextWithParams) {
     if (!group)
       return NextResponse.json(
         { error: "Grupo não encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     if (group.userId !== user.id)
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
@@ -47,7 +47,7 @@ export async function POST(_req: Request, context: NextContextWithParams) {
           error:
             "Alguns contatos não foram encontrados ou não pertencem a você",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

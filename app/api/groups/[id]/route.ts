@@ -21,7 +21,7 @@ export async function PUT(_req: Request, context: NextContextWithParams) {
     if (!group)
       return NextResponse.json(
         { error: "Grupo não encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     if (group.userId !== user.id)
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
@@ -43,7 +43,7 @@ export async function PUT(_req: Request, context: NextContextWithParams) {
       if (existing && existing.id !== groupId) {
         return NextResponse.json(
           { error: "Já existe um grupo com este nome" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -79,7 +79,7 @@ export async function DELETE(_req: Request, context: NextContextWithParams) {
     if (!group)
       return NextResponse.json(
         { error: "Grupo não encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     if (group.userId !== user.id)
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
@@ -114,7 +114,7 @@ export async function GET(_req: Request, context: NextContextWithParams) {
     if (!group)
       return NextResponse.json(
         { error: "Grupo não encontrado" },
-        { status: 404 }
+        { status: 404 },
       );
     if (group.userId !== user.id)
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 });

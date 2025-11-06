@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import fs from "node:fs";
 import path from "node:path";
+import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/serverAuth";
 import { getErrorMessage } from "@/lib/utils";
@@ -53,11 +53,11 @@ export async function POST(req: Request) {
     if (!isProbablyImage(buffer)) {
       const nm = (fileField as File & { name?: string }).name || "unknown";
       console.warn(
-        `Upload rejeitado: arquivo não parece ser uma imagem válida (size=${buffer.length}, name=${nm})`
+        `Upload rejeitado: arquivo não parece ser uma imagem válida (size=${buffer.length}, name=${nm})`,
       );
       return NextResponse.json(
         { error: "Arquivo não é uma imagem válida ou está corrompido." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     if (!/\.(jpe?g|png)$/i.test(originalName)) {
       return NextResponse.json(
         { error: "Formato não suportado. Envie apenas JPG, JPEG ou PNG." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       } catch {}
       return NextResponse.json(
         { error: "Arquivo excede o tamanho máximo permitido" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -105,11 +105,11 @@ export async function POST(req: Request) {
       } catch {}
       console.error(
         "Falha ao mover arquivo temp para destino:",
-        getErrorMessage(renameErr)
+        getErrorMessage(renameErr),
       );
       return NextResponse.json(
         { error: "Falha ao gravar arquivo no servidor." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
 
     if (mime && !ALLOWED_MIMES.has(mime)) {
       console.warn(
-        `Upload recebido com mime inesperado: ${result.mime} (inferido: ${mime}). Aceitando pela extensão.`
+        `Upload recebido com mime inesperado: ${result.mime} (inferido: ${mime}). Aceitando pela extensão.`,
       );
     }
 
@@ -165,7 +165,7 @@ export async function POST(req: Request) {
         }
 
         const s3 = new S3Client(
-          s3ClientConfig as unknown as Record<string, unknown>
+          s3ClientConfig as unknown as Record<string, unknown>,
         );
         const fileBuffer = fs.readFileSync(destPath);
         const key = `uploads/${Date.now()}-${dest}`;
@@ -175,7 +175,7 @@ export async function POST(req: Request) {
             Key: key,
             Body: fileBuffer,
             ContentType: mime || undefined,
-          })
+          }),
         );
         url = `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${key}`;
         try {

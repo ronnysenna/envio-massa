@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 
 export default function Brand({ className }: { className?: string }) {
   return (

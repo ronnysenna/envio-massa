@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     if (!nome) {
       return NextResponse.json(
         { error: "Nome é obrigatório" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
     if (existing) {
       return NextResponse.json(
         { error: "Já existe um grupo com este nome" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
