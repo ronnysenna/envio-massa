@@ -57,7 +57,8 @@ export default function EnviarPage() {
     let mounted = true;
     async function fetchContacts() {
       try {
-        const res = await fetch("/api/contacts");
+        // trazer todos os contatos do usuário (até limite de 1000 da API) para que a lista mostre todos
+        const res = await fetch("/api/contacts?limit=1000&page=1");
         if (!mounted) return;
         if (res.ok) {
           const data = await res.json();
@@ -194,18 +195,38 @@ export default function EnviarPage() {
     toast.showToast({ type: "success", message: "Imagem selecionada." });
   };
 
-  const handleSelectAll = () => {
-    const q = search.trim().toLowerCase();
-    const ids = contacts
-      .filter((c) => {
-        if (!q) return true;
-        const nome = (c.nome || "").toLowerCase();
-        const telefone = (c.telefone || "").toLowerCase();
-        return nome.includes(q) || telefone.includes(q);
-      })
-      .map((c) => c.id)
-      .filter(Boolean) as number[];
-    setSelectedIds(ids);
+  const handleSelectAll = async () => {
+    // buscar todos os contatos visíveis no servidor (até limite razoável)
+    const q = search.trim();
+    try {
+      const params = new URLSearchParams();
+      if (q) params.set("search", q);
+      // garantir que traga muitos resultados (API limita em 1000)
+      params.set("limit", "1000");
+      // sempre a primeira página para pegar todos
+      params.set("page", "1");
+
+      const res = await fetch(`/api/contacts?${params.toString()}`);
+      if (!res.ok) {
+        // fallback para seleção local (somente contatos carregados)
+        const ids = contacts
+          .map((c) => c.id)
+          .filter(Boolean) as number[];
+        setSelectedIds(ids);
+        return;
+      }
+
+      const data = await res.json().catch(() => ({ contacts: [] }));
+      const fetched: Array<{ id?: number; telefone?: string }> = data.contacts || [];
+      const ids = fetched.map((c) => c.id).filter(Boolean) as number[];
+      // atualizar lista local para mostrar todos os contatos retornados
+      setContacts(fetched as Contact[]);
+      setSelectedIds(ids);
+    } catch (err) {
+      // em caso de erro, selecionar apenas os contatos já carregados
+      const ids = contacts.map((c) => c.id).filter(Boolean) as number[];
+      setSelectedIds(ids);
+    }
   };
   const handleClearSelection = () => setSelectedIds([]);
 
