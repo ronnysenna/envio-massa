@@ -2,6 +2,7 @@
 
 import { Search, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useToast } from "@/components/ToastProvider";
 
 interface Contact {
   id: number;
@@ -29,17 +30,20 @@ export default function ManageContactsModal({
   onClose,
   onSave,
 }: ManageContactsModalProps) {
+  const toast = useToast();
+  const MAX_SELECT = 25;
+
   const [allContacts, setAllContacts] = useState<Contact[]>([]);
   const [selectedContactIds, setSelectedContactIds] = useState<number[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Buscar todos os contatos
+  // Buscar todos os contatos (até limite razoável da API)
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      fetch("/api/contacts", { credentials: "include" })
+      fetch("/api/contacts?limit=1000&page=1", { credentials: "include" })
         .then((res) => res.json())
         .then((data) => {
           setAllContacts(data.contacts || []);
@@ -57,11 +61,19 @@ export default function ManageContactsModal({
   useEffect(() => {
     if (group?.contacts) {
       const groupContactIds = group.contacts.map((gc) => gc.contact.id);
-      setSelectedContactIds(groupContactIds);
+      if (groupContactIds.length > MAX_SELECT) {
+        setSelectedContactIds(groupContactIds.slice(0, MAX_SELECT));
+        toast.showToast({
+          type: "info",
+          message: `O grupo possui mais de ${MAX_SELECT} contatos — apenas os primeiros ${MAX_SELECT} foram carregados para edição.`,
+        });
+      } else {
+        setSelectedContactIds(groupContactIds);
+      }
     } else {
       setSelectedContactIds([]);
     }
-  }, [group]);
+  }, [group, toast]);
 
   const filteredContacts = allContacts.filter(
     (contact) =>
@@ -70,15 +82,32 @@ export default function ManageContactsModal({
   );
 
   const handleToggleContact = (contactId: number) => {
-    setSelectedContactIds((prev) =>
-      prev.includes(contactId)
-        ? prev.filter((id) => id !== contactId)
-        : [...prev, contactId],
-    );
+    setSelectedContactIds((prev) => {
+      if (prev.includes(contactId)) {
+        return prev.filter((id) => id !== contactId);
+      }
+      if (prev.length >= MAX_SELECT) {
+        toast.showToast({
+          type: "error",
+          message: `Você só pode selecionar até ${MAX_SELECT} contatos.`,
+        });
+        return prev;
+      }
+      return [...prev, contactId];
+    });
   };
 
   const handleSelectAll = () => {
-    setSelectedContactIds(filteredContacts.map((c) => c.id));
+    const ids = filteredContacts.map((c) => c.id);
+    if (ids.length > MAX_SELECT) {
+      setSelectedContactIds(ids.slice(0, MAX_SELECT));
+      toast.showToast({
+        type: "info",
+        message: `Foram selecionados os primeiros ${MAX_SELECT} contatos (limite).`,
+      });
+    } else {
+      setSelectedContactIds(ids);
+    }
   };
 
   const handleSelectNone = () => {
