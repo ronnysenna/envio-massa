@@ -52,6 +52,36 @@ export default function EnviarPage() {
     groupIds?: number[];
   }>(null);
 
+  // helper para tentar carregar a URL original e, em caso de erro, tentar decodeURIComponent antes de usar o ícone fallback
+  const handleImageLoadError = (url: string | null) => (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const imgEl = e.currentTarget as HTMLImageElement;
+    try {
+      // evitar loop de tentativas
+      if (imgEl.getAttribute("data-tried") === "1") {
+        imgEl.src = "/file.svg";
+        return;
+      }
+      imgEl.setAttribute("data-tried", "1");
+
+      if (!url) {
+        imgEl.src = "/file.svg";
+        return;
+      }
+
+      try {
+        const decoded = decodeURIComponent(url);
+        // se decoded for diferente, tentar decoded, senão reusar url
+        imgEl.src = decoded !== url ? decoded : url;
+      } catch {
+        imgEl.src = url;
+      }
+    } catch {
+      try {
+        imgEl.src = "/file.svg";
+      } catch { }
+    }
+  };
+
   // buscar contatos do servidor
   useEffect(() => {
     let mounted = true;
@@ -671,15 +701,10 @@ export default function EnviarPage() {
                 {imageUrl && (
                   <div className="relative rounded overflow-hidden border w-24 h-24 sm:w-28 sm:h-28 bg-white p-1 flex items-center justify-center">
                     <img
-                      src={encodeURI(imageUrl)}
+                      src={imageUrl}
                       alt="Imagem selecionada"
                       className="w-full h-full object-contain"
-                      onError={(e) => {
-                        try {
-                          (e.currentTarget as HTMLImageElement).src =
-                            "/file.svg";
-                        } catch { }
-                      }}
+                      onError={handleImageLoadError(imageUrl)}
                     />
                   </div>
                 )}
@@ -805,15 +830,10 @@ export default function EnviarPage() {
                     >
                       <div className="w-full aspect-square rounded min-h-[120px] flex items-center justify-center overflow-hidden">
                         <img
-                          src={encodeURI(img.url)}
+                          src={img.url}
                           alt={img.filename}
                           className="w-full h-full object-contain"
-                          onError={(e) => {
-                            try {
-                              (e.currentTarget as HTMLImageElement).src =
-                                "/file.svg";
-                            } catch { }
-                          }}
+                          onError={handleImageLoadError(img.url)}
                         />
                       </div>
                     </button>

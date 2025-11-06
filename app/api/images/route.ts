@@ -50,16 +50,8 @@ export async function GET(req: Request) {
           typeof url === "string" &&
           (url.startsWith("http://") || url.startsWith("https://"))
         ) {
-          // already absolute - but if in dev and URL host differs from derivedBase, prefer derived base
-          if (!isProd) {
-            try {
-              const parsed = new URL(url);
-              const pathAndSearch = parsed.pathname + (parsed.search || "");
-              url = `${baseUrl}${pathAndSearch}`;
-            } catch {
-              // keep original
-            }
-          }
+          // URL absoluta (S3 ou externa) — manter como está para evitar reescrita incorreta
+          // Não reescrever para `baseUrl` — isso causava 404 quando o host original era diferente
         } else if (typeof url === "string" && url.startsWith("/")) {
           url = `${baseUrl}${url}`;
         } else if (typeof url === "string") {
