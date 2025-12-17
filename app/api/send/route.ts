@@ -41,8 +41,16 @@ export async function POST(req: Request) {
       if (imageUrl.includes("://")) {
         try {
           const url = new URL(imageUrl);
-          imagemPath = url.pathname; // Resultado: /api/download/1761503198117-PM.jpg
-        } catch {
+          imagemPath = url.pathname; // Resultado: /api/uploads/1761503198117-PM.jpg
+          console.log("[SEND DEBUG] Extraído pathname:", {
+            imageUrl,
+            imagemPath,
+          });
+        } catch (e) {
+          console.log("[SEND DEBUG] Erro ao fazer parse da URL:", {
+            imageUrl,
+            error: String(e),
+          });
           imagemPath = "sem-imagem";
         }
       } else {
@@ -50,6 +58,7 @@ export async function POST(req: Request) {
         imagemPath = imageUrl;
       }
     }
+    console.log("[SEND DEBUG] imagemPath após processamento:", imagemPath);
 
     // build payload to n8n com contatos selecionados em estrutura organizada
     // Construir URL completa da imagem (para N8N conseguir fazer download)
