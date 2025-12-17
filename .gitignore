@@ -42,3 +42,8 @@ next-env.d.ts
 
 # archived sensitive or dev files
 archive/
+
+# database backups (sensitive data)
+backups/
+*.sql
+*.json
