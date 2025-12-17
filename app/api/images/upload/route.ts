@@ -142,9 +142,8 @@ export async function POST(req: Request) {
     }
 
     const dest = path.basename(result.filepath);
-    // encode dest for URL safety
-    const encodedDest = encodeURIComponent(dest);
-    let url = `/api/uploads/${encodedDest}`;
+    // NÃO fazer encode - o nome já foi sanitizado na linha 73
+    let url = `/api/uploads/${dest}`;
 
     // Se variáveis S3 estiverem configuradas, tentar upload para S3 (import dinâmico)
     const S3_BUCKET = process.env.S3_BUCKET;
@@ -189,6 +188,12 @@ export async function POST(req: Request) {
     // Sempre salvar apenas o caminho relativo no banco
     // A URL completa será montada pela API /api/images quando necessário
     const relativeUrl = url; // e.g., /api/uploads/1766009146369-03.jpg
+
+    console.log("[UPLOAD DEBUG] Salvando no banco:", {
+      relativeUrl,
+      filename: result.filename || dest,
+      userId,
+    });
 
     // save image record in DB (apenas caminho relativo)
     const image = await prisma.image.create({
