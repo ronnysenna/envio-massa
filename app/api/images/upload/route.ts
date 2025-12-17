@@ -4,9 +4,10 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { requireUser } from "@/lib/serverAuth";
 import { getErrorMessage } from "@/lib/utils";
+import { getUploadsDir } from "@/lib/uploadsDir";
 
-const uploadsDir = path.join(process.cwd(), "public", "uploads");
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+const uploadsDir = getUploadsDir();
+console.log("[INIT] Uploads directory:", uploadsDir);
 
 const MAX_FILE_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 5 * 1024 * 1024); // 5MB default
 // aceitar somente JPEG/JPG e PNG no servidor (síncrono com validação cliente)

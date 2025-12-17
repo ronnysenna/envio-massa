@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { getPossibleUploadsPaths } from "@/lib/uploadsDir";
 
 export async function GET(
   _req: NextRequest,
@@ -13,6 +14,12 @@ export async function GET(
     // Decodifica o filename (caso contenha espaços ou caracteres especiais)
     const decodedFilename = decodeURIComponent(String(filename || ""));
 
+    console.log("[UPLOADS ROUTE] Requisição:", {
+      filename,
+      decodedFilename,
+      cwd: process.cwd(),
+    });
+
     // Validar nome do arquivo para evitar directory traversal
     if (
       !decodedFilename ||
@@ -22,20 +29,14 @@ export async function GET(
       return NextResponse.json({ error: "Invalid filename" }, { status: 400 });
     }
 
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-
-    // Tentar múltiplos caminhos para suportar desenvolvimento e execução dentro de containers
-    const possiblePaths = [
-      path.join(uploadsDir, decodedFilename),
-      path.join("/app", "public", "uploads", decodedFilename),
-      path.join("/usr/src/app", "public", "uploads", decodedFilename),
-      path.join("/tmp", "uploads", decodedFilename),
-    ];
+    // Usar função centralizada para buscar o arquivo em todos os caminhos possíveis
+    const possiblePaths = getPossibleUploadsPaths(decodedFilename);
 
     let filePath: string | null = null;
     for (const p of possiblePaths) {
       if (fs.existsSync(p)) {
         filePath = p;
+        console.log("[UPLOADS ROUTE] Arquivo encontrado em:", p);
         break;
       }
     }
