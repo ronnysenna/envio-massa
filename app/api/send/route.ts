@@ -37,22 +37,41 @@ export async function POST(req: Request) {
     // Se não houver imagem, usar "sem-imagem"
     let imagemPath = "sem-imagem";
     if (imageUrl && typeof imageUrl === "string") {
-      console.log("[SEND DEBUG] imageUrl recebida:", imageUrl);
+      // IMPORTANTE: remover espaços/quebras de linha antes de processar
+      const cleanUrl = imageUrl.trim();
+      console.log(
+        "[SEND DEBUG] imageUrl recebida (length):",
+        cleanUrl.length,
+        "value:",
+        cleanUrl
+      );
 
       // Se for URL completa (contém ://), extrair apenas o pathname
-      if (imageUrl.includes("://")) {
+      if (cleanUrl.includes("://")) {
         // Usar regex em vez de new URL() para evitar problemas de encoding
-        const match = imageUrl.match(/^https?:\/\/[^/]+(.+)$/);
+        const match = cleanUrl.match(/^https?:\/\/[^/]+(.+)$/);
         if (match?.[1]) {
           imagemPath = match[1];
           console.log("[SEND DEBUG] Pathname extraído com regex:", imagemPath);
         } else {
-          console.log("[SEND DEBUG] Não conseguiu extrair pathname com regex");
-          imagemPath = "sem-imagem";
+          console.log(
+            "[SEND DEBUG] Não conseguiu extrair pathname com regex, tentando url.pathname"
+          );
+          // Fallback: tentar extrair tudo após o primeiro /
+          const slashIndex = cleanUrl.indexOf("/", cleanUrl.indexOf("://") + 3);
+          if (slashIndex !== -1) {
+            imagemPath = cleanUrl.substring(slashIndex);
+            console.log(
+              "[SEND DEBUG] Pathname extraído com substring:",
+              imagemPath
+            );
+          } else {
+            imagemPath = "sem-imagem";
+          }
         }
-      } else if (imageUrl.startsWith("/api/uploads/")) {
+      } else if (cleanUrl.startsWith("/api/uploads/")) {
         // Se já é um caminho relativo, usar como está
-        imagemPath = imageUrl;
+        imagemPath = cleanUrl;
         console.log("[SEND DEBUG] Usando caminho relativo:", imagemPath);
       } else {
         // Caminho desconhecido
