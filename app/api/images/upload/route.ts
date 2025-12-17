@@ -53,11 +53,11 @@ export async function POST(req: Request) {
     if (!isProbablyImage(buffer)) {
       const nm = (fileField as File & { name?: string }).name || "unknown";
       console.warn(
-        `Upload rejeitado: arquivo não parece ser uma imagem válida (size=${buffer.length}, name=${nm})`,
+        `Upload rejeitado: arquivo não parece ser uma imagem válida (size=${buffer.length}, name=${nm})`
       );
       return NextResponse.json(
         { error: "Arquivo não é uma imagem válida ou está corrompido." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -67,7 +67,7 @@ export async function POST(req: Request) {
     if (!/\.(jpe?g|png)$/i.test(originalName)) {
       return NextResponse.json(
         { error: "Formato não suportado. Envie apenas JPG, JPEG ou PNG." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       } catch {}
       return NextResponse.json(
         { error: "Arquivo excede o tamanho máximo permitido" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -105,11 +105,11 @@ export async function POST(req: Request) {
       } catch {}
       console.error(
         "Falha ao mover arquivo temp para destino:",
-        getErrorMessage(renameErr),
+        getErrorMessage(renameErr)
       );
       return NextResponse.json(
         { error: "Falha ao gravar arquivo no servidor." },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
 
     if (mime && !ALLOWED_MIMES.has(mime)) {
       console.warn(
-        `Upload recebido com mime inesperado: ${result.mime} (inferido: ${mime}). Aceitando pela extensão.`,
+        `Upload recebido com mime inesperado: ${result.mime} (inferido: ${mime}). Aceitando pela extensão.`
       );
     }
 
@@ -165,7 +165,7 @@ export async function POST(req: Request) {
         }
 
         const s3 = new S3Client(
-          s3ClientConfig as unknown as Record<string, unknown>,
+          s3ClientConfig as unknown as Record<string, unknown>
         );
         const fileBuffer = fs.readFileSync(destPath);
         const key = `uploads/${Date.now()}-${dest}`;
@@ -175,7 +175,7 @@ export async function POST(req: Request) {
             Key: key,
             Body: fileBuffer,
             ContentType: mime || undefined,
-          }),
+          })
         );
         url = `https://${S3_BUCKET}.s3.${S3_REGION}.amazonaws.com/${key}`;
         try {
@@ -186,18 +186,22 @@ export async function POST(req: Request) {
       }
     }
 
-    // In production we may want to store absolute URL; in dev store relative path to /api/uploads
+    // Sempre salvar apenas o caminho relativo no banco
+    // A URL completa será montada pela API /api/images quando necessário
+    const relativeUrl = url; // e.g., /api/uploads/1766009146369-03.jpg
+
+    // save image record in DB (apenas caminho relativo)
+    const image = await prisma.image.create({
+      data: { url: relativeUrl, filename: result.filename || dest, userId },
+    });
+
+    // Retornar URL completa apenas na resposta
     const configuredBase = process.env.NEXT_PUBLIC_BASE_URL || "";
     const isProd = process.env.NODE_ENV === "production";
     const publicUrl =
       isProd && configuredBase
-        ? `${configuredBase.replace(/\/$/, "")}${url}`
-        : url;
-
-    // save image record in DB
-    const image = await prisma.image.create({
-      data: { url: publicUrl, filename: result.filename || dest, userId },
-    });
+        ? `${configuredBase.replace(/\/$/, "")}${relativeUrl}`
+        : relativeUrl;
 
     return NextResponse.json({ url: publicUrl, id: image.id });
   } catch (err) {
