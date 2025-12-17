@@ -48,8 +48,7 @@ RUN mkdir -p /app/public/uploads && chmod 755 /app/public/uploads
 
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+# Create start script that runs migrations and then starts the app
+RUN echo '#!/bin/sh\nset -e\necho "Running Prisma migrations..."\nnpx prisma migrate deploy\necho "Starting Next.js..."\nexec npm run start' > /app/start.sh && chmod +x /app/start.sh
 
-CMD ["npm", "run", "start"]
+CMD ["/app/start.sh"]
