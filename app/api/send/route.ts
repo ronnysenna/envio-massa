@@ -37,28 +37,30 @@ export async function POST(req: Request) {
     // Se não houver imagem, usar "sem-imagem"
     let imagemPath = "sem-imagem";
     if (imageUrl && typeof imageUrl === "string") {
-      // Se for URL completa, extrair apenas o pathname
+      console.log("[SEND DEBUG] imageUrl recebida:", imageUrl);
+
+      // Se for URL completa (contém ://), extrair apenas o pathname
       if (imageUrl.includes("://")) {
-        try {
-          const url = new URL(imageUrl);
-          imagemPath = url.pathname; // Resultado: /api/uploads/1761503198117-PM.jpg
-          console.log("[SEND DEBUG] Extraído pathname:", {
-            imageUrl,
-            imagemPath,
-          });
-        } catch (e) {
-          console.log("[SEND DEBUG] Erro ao fazer parse da URL:", {
-            imageUrl,
-            error: String(e),
-          });
+        // Usar regex em vez de new URL() para evitar problemas de encoding
+        const match = imageUrl.match(/^https?:\/\/[^/]+(.+)$/);
+        if (match?.[1]) {
+          imagemPath = match[1];
+          console.log("[SEND DEBUG] Pathname extraído com regex:", imagemPath);
+        } else {
+          console.log("[SEND DEBUG] Não conseguiu extrair pathname com regex");
           imagemPath = "sem-imagem";
         }
-      } else {
-        // Se já for um caminho, usar como está
+      } else if (imageUrl.startsWith("/api/uploads/")) {
+        // Se já é um caminho relativo, usar como está
         imagemPath = imageUrl;
+        console.log("[SEND DEBUG] Usando caminho relativo:", imagemPath);
+      } else {
+        // Caminho desconhecido
+        console.log("[SEND DEBUG] Caminho desconhecido, ignorando");
+        imagemPath = "sem-imagem";
       }
     }
-    console.log("[SEND DEBUG] imagemPath após processamento:", imagemPath);
+    console.log("[SEND DEBUG] imagemPath final:", imagemPath);
 
     // build payload to n8n com contatos selecionados em estrutura organizada
     // Construir URL completa da imagem (para N8N conseguir fazer download)
