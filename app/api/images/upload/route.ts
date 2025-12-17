@@ -209,6 +209,14 @@ export async function POST(req: Request) {
         ? `${configuredBase.replace(/\/$/, "")}${relativeUrl}`
         : relativeUrl;
 
+    console.log("[UPLOAD RESPONSE]", {
+      relativeUrl,
+      publicUrl,
+      configuredBase,
+      isProd,
+      imageId: image.id,
+    });
+
     return NextResponse.json({ url: publicUrl, id: image.id });
   } catch (err) {
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });

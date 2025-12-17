@@ -12,16 +12,24 @@ export async function POST(req: Request) {
     if (!WEBHOOK_URL) {
       return NextResponse.json(
         { error: "WEBHOOK_URL not configured on server" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     const body = await req.json();
     const { message, imageUrl, contacts, groupIds } = body;
+
+    console.log("[SEND DEBUG] Recebido payload:", {
+      message: message?.substring(0, 50),
+      imageUrl,
+      contactsCount: Array.isArray(contacts) ? contacts.length : 0,
+      groupIdsCount: Array.isArray(groupIds) ? groupIds.length : 0,
+    });
+
     if (!message) {
       return NextResponse.json(
         { error: "Invalid payload: message is required" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -134,7 +142,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json(
         { success: true, status: response.status, data: response.data },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (axiosErr: unknown) {
       // if n8n responded with an error status, forward that information
@@ -149,7 +157,7 @@ export async function POST(req: Request) {
           status: upstreamStatus,
           data: upstreamData,
         },
-        { status: upstreamStatus },
+        { status: upstreamStatus }
       );
     }
   } catch (err) {
