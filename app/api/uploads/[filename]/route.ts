@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ filename: string }> },
+  { params }: { params: Promise<{ filename: string }> }
 ) {
   try {
     const { filename } = await params;
@@ -41,6 +41,11 @@ export async function GET(
     }
 
     if (!filePath) {
+      console.error(
+        `[UPLOAD DEBUG] Arquivo não encontrado: ${decodedFilename}`
+      );
+      console.error(`[UPLOAD DEBUG] Caminhos procurados:`, possiblePaths);
+      console.error(`[UPLOAD DEBUG] process.cwd():`, process.cwd());
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
@@ -68,7 +73,7 @@ export async function GET(
     console.error("Erro ao servir arquivo:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
