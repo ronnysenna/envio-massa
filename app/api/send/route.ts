@@ -17,11 +17,30 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { message, imageUrl, contacts, groupIds } = body;
+    let { message, imageUrl, contacts, groupIds } = body;
+
+    // Corrigir imageUrl se vier com aspas extras (stringify duplo)
+    if (
+      typeof imageUrl === "string" &&
+      imageUrl.startsWith('"') &&
+      imageUrl.endsWith('"')
+    ) {
+      try {
+        imageUrl = JSON.parse(imageUrl);
+        console.log(
+          "[SEND DEBUG] imageUrl tinha aspas extras, corrigido para:",
+          imageUrl
+        );
+      } catch (e) {
+        console.log("[SEND DEBUG] Tentou remover aspas extras mas falhou:", e);
+      }
+    }
 
     console.log("[SEND DEBUG] Recebido payload:", {
       message: message?.substring(0, 50),
       imageUrl,
+      imageUrlType: typeof imageUrl,
+      imageUrlValue: JSON.stringify(imageUrl),
       contactsCount: Array.isArray(contacts) ? contacts.length : 0,
       groupIdsCount: Array.isArray(groupIds) ? groupIds.length : 0,
     });
@@ -104,6 +123,12 @@ export async function POST(req: Request) {
       imagemUrl: imagemUrlCompleta,
       userId: user.id,
     };
+
+    console.log("[SEND DEBUG] payload.imagemUrl antes de enviar:", {
+      type: typeof payload.imagemUrl,
+      value: payload.imagemUrl,
+      stringified: JSON.stringify(payload.imagemUrl),
+    });
 
     // Se groupIds foram fornecidos, buscar contatos desses grupos (garantindo pertencimento ao usuário)
     if (Array.isArray(groupIds) && groupIds.length > 0) {
