@@ -21,12 +21,18 @@ export async function PUT(_req: Request, context: NextContextWithParams) {
     if (!group)
       return NextResponse.json(
         { error: "Grupo não encontrado" },
-        { status: 404 },
+        { status: 404 }
       );
     if (group.userId !== user.id)
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
 
-    const data: Partial<{ nome: string; descricao: string | null }> = {};
+    const data: Partial<{
+      nome: string;
+      descricao: string | null;
+      updatedAt: Date;
+    }> = {
+      updatedAt: new Date(),
+    };
     if (typeof nome === "string" && nome.trim()) {
       const trimmedNome = nome.trim();
 
@@ -43,7 +49,7 @@ export async function PUT(_req: Request, context: NextContextWithParams) {
       if (existing && existing.id !== groupId) {
         return NextResponse.json(
           { error: "Já existe um grupo com este nome" },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -57,11 +63,20 @@ export async function PUT(_req: Request, context: NextContextWithParams) {
       data,
       include: {
         _count: {
-          select: { contacts: true },
+          select: { ContactGroup: true },
         },
       },
     });
-    return NextResponse.json({ group: updated });
+
+    // Normalizar resposta
+    const normalized = {
+      ...updated,
+      _count: {
+        contacts: updated._count.ContactGroup,
+      },
+    };
+
+    return NextResponse.json({ group: normalized });
   } catch (err) {
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
@@ -79,7 +94,7 @@ export async function DELETE(_req: Request, context: NextContextWithParams) {
     if (!group)
       return NextResponse.json(
         { error: "Grupo não encontrado" },
-        { status: 404 },
+        { status: 404 }
       );
     if (group.userId !== user.id)
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
@@ -100,13 +115,13 @@ export async function GET(_req: Request, context: NextContextWithParams) {
     const group = await prisma.group.findUnique({
       where: { id: groupId },
       include: {
-        contacts: {
+        ContactGroup: {
           include: {
-            contact: true,
+            Contact: true,
           },
         },
         _count: {
-          select: { contacts: true },
+          select: { ContactGroup: true },
         },
       },
     });
@@ -114,12 +129,23 @@ export async function GET(_req: Request, context: NextContextWithParams) {
     if (!group)
       return NextResponse.json(
         { error: "Grupo não encontrado" },
-        { status: 404 },
+        { status: 404 }
       );
     if (group.userId !== user.id)
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 });
 
-    return NextResponse.json({ group });
+    // Normalizar resposta para manter compatibilidade com frontend
+    const normalized = {
+      ...group,
+      contacts: group.ContactGroup.map((cg) => ({
+        contact: cg.Contact,
+      })),
+      _count: {
+        contacts: group._count.ContactGroup,
+      },
+    };
+
+    return NextResponse.json({ group: normalized });
   } catch (err) {
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }

@@ -23,7 +23,9 @@ export async function PUT(_req: Request, context: NextContextWithParams) {
     if (contact.userId !== user.id)
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-    const data: Partial<{ nome: string; telefone: string }> = {};
+    const data: Partial<{ nome: string; telefone: string; updatedAt: Date }> = {
+      updatedAt: new Date(),
+    };
     if (typeof nome === "string") data.nome = nome;
     if (typeof telefone === "string")
       data.telefone = telefone.replace(/\D/g, "");

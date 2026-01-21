@@ -12,7 +12,7 @@ export async function GET(req: Request) {
     const page = Math.max(1, Number(url.searchParams.get("page") ?? 1));
     const limit = Math.min(
       1000,
-      Math.max(1, Number(url.searchParams.get("limit") ?? 25)),
+      Math.max(1, Number(url.searchParams.get("limit") ?? 25))
     );
     const search = (url.searchParams.get("search") || "").trim();
 
@@ -63,13 +63,13 @@ export async function POST(req: Request) {
       // atualizar nome / reassociar ao usuário atual
       const updated = await prisma.contact.update({
         where: { id: existing.id },
-        data: { nome, userId },
+        data: { nome, userId, updatedAt: new Date() },
       });
       return NextResponse.json({ contact: updated });
     }
 
     const created = await prisma.contact.create({
-      data: { nome, telefone, userId },
+      data: { nome, telefone, userId, updatedAt: new Date() },
     });
 
     return NextResponse.json({ contact: created });

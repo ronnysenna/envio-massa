@@ -32,12 +32,12 @@ async function parseMultipart(req: Request) {
           file.on("end", () => {
             /* noop */
           });
-        },
+        }
       );
 
       bb.on("error", (e: Error) => reject(e));
       bb.on("finish", () =>
-        resolve({ fileBuffer: Buffer.concat(fileBuffer), filename }),
+        resolve({ fileBuffer: Buffer.concat(fileBuffer), filename })
       );
 
       // em alguns ambientes o body já está disponível como arrayBuffer
@@ -47,7 +47,7 @@ async function parseMultipart(req: Request) {
           bb.end(Buffer.from(buf));
         })
         .catch((e) => reject(e));
-    },
+    }
   );
 }
 
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
               acc[key.toLowerCase()] = String(row[key] ?? "").trim();
               return acc;
             },
-            {},
+            {}
           );
           return {
             nome: keys.nome || "",
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
               acc[key.toLowerCase()] = String(row[key] ?? "").trim();
               return acc;
             },
-            {},
+            {}
           );
           return {
             nome: keys.nome || "",
@@ -116,12 +116,12 @@ export async function POST(req: Request) {
       if (existing) {
         await prisma.contact.update({
           where: { id: existing.id },
-          data: { nome: c.nome, userId },
+          data: { nome: c.nome, userId, updatedAt: new Date() },
         });
         updated++;
       } else {
         await prisma.contact.create({
-          data: { nome: c.nome, telefone, userId },
+          data: { nome: c.nome, telefone, userId, updatedAt: new Date() },
         });
         inserted++;
       }
