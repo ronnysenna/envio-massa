@@ -24,8 +24,8 @@ export async function POST(req: Request) {
 
   const upsert = await prisma.selection.upsert({
     where: { userId: user.id },
-    update: { selectedIds: normalized },
-    create: { userId: user.id, selectedIds: normalized },
+    update: { selectedIds: normalized, updatedAt: new Date() },
+    create: { userId: user.id, selectedIds: normalized, updatedAt: new Date() },
   });
 
   return NextResponse.json({ selectedIds: upsert.selectedIds });
