@@ -171,7 +171,7 @@ export default function ImagemPage() {
   const handleSelectForSend = (url: string) => {
     try {
       localStorage.setItem("selectedImageUrl", url);
-    } catch {}
+    } catch { }
     toast.showToast({
       type: "success",
       message: "Imagem selecionada para envio.",
@@ -264,7 +264,7 @@ export default function ImagemPage() {
                     onError={(e) => {
                       try {
                         (e.currentTarget as HTMLImageElement).src = "/file.svg";
-                      } catch {}
+                      } catch { }
                     }}
                   />
                 </div>
@@ -327,16 +327,34 @@ export default function ImagemPage() {
                     type="button"
                     onClick={() => openPreview(img.url)}
                     className="block w-full aspect-square bg-gray-100 dark:bg-gray-900 hover:opacity-80 transition overflow-hidden group relative"
-                  >
-                    <img
-                      src={encodeURI(img.url)}
+                  >                    <img
+                      src={img.url}
                       alt={img.filename}
                       className="w-full h-full object-cover group-hover:scale-105 transition"
+                      loading="lazy"
                       onError={(e) => {
-                        try {
-                          (e.currentTarget as HTMLImageElement).src =
-                            "/file.svg";
-                        } catch {}
+                        const target = e.currentTarget as HTMLImageElement;
+                        const currentSrc = target.src;
+
+                        // Evitar loop infinito
+                        if (currentSrc.includes("file.svg")) return;
+
+                        // Se a URL for local e falhar, tentar produção
+                        if (currentSrc.includes("localhost") || currentSrc.includes("127.0.0.1")) {
+                          const prodUrl = currentSrc.replace(
+                            /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/,
+                            "https://env.jffrontais.com.br"
+                          );
+                          console.log("[IMAGE] Tentando produção:", prodUrl);
+                          target.src = prodUrl;
+                          return;
+                        }
+
+                        // Se também falhar em produção, mostrar ícone
+                        console.error("[IMAGE ERROR] Falha ao carregar:", img.url);
+                        target.src = "/file.svg";
+                        target.classList.remove("object-cover");
+                        target.classList.add("object-contain", "p-4");
                       }}
                     />
                   </button>
@@ -399,7 +417,7 @@ export default function ImagemPage() {
                         try {
                           (e.currentTarget as HTMLImageElement).src =
                             "/file.svg";
-                        } catch {}
+                        } catch { }
                       }}
                     />
                   </div>

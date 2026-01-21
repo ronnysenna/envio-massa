@@ -42,11 +42,23 @@ export async function GET(
     }
 
     if (!filePath) {
-      console.error(
-        `[UPLOAD DEBUG] Arquivo não encontrado: ${decodedFilename}`
-      );
-      console.error(`[UPLOAD DEBUG] Caminhos procurados:`, possiblePaths);
-      console.error(`[UPLOAD DEBUG] process.cwd():`, process.cwd());
+      console.error(`[UPLOADS] ❌ Arquivo não encontrado: ${decodedFilename}`);
+      console.error(`[UPLOADS] Caminhos procurados:`, possiblePaths);
+      console.error(`[UPLOADS] process.cwd():`, process.cwd());
+      console.error(`[UPLOADS] __dirname:`, __dirname);
+
+      // Listar arquivos no diretório de uploads para debug
+      const uploadsPath = path.join(process.cwd(), "public", "uploads");
+      try {
+        const files = fs.readdirSync(uploadsPath);
+        console.error(
+          `[UPLOADS] Arquivos em ${uploadsPath}:`,
+          files.slice(0, 10)
+        );
+      } catch {
+        console.error(`[UPLOADS] Não foi possível listar ${uploadsPath}`);
+      }
+
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 

@@ -1,73 +1,73 @@
-datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
-}
-
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
-model User {
-    id        Int        @id @default(autoincrement())
-    username  String     @unique
-    password  String
-    role      String     @default("user")
-    createdAt DateTime   @default(now())
-    contacts  Contact[]
-    images    Image[]
-    groups    Group[]
-    selection Selection?
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Contact {
-    id        Int            @id @default(autoincrement())
-    nome      String
-    telefone  String         @unique
-    email     String?
-    userId    Int
-    user      User           @relation(fields: [userId], references: [id])
-    createdAt DateTime       @default(now())
-    updatedAt DateTime       @updatedAt
-    groups    ContactGroup[]
-}
-
-model Group {
-    id        Int            @id @default(autoincrement())
-    nome      String
-    descricao String?
-    userId    Int
-    user      User           @relation(fields: [userId], references: [id])
-    createdAt DateTime       @default(now())
-    updatedAt DateTime       @updatedAt
-    contacts  ContactGroup[]
-
-    @@unique([userId, nome])
+  id           Int            @id @default(autoincrement())
+  nome         String
+  telefone     String         @unique
+  userId       Int
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  email        String?
+  User         User           @relation(fields: [userId], references: [id])
+  ContactGroup ContactGroup[]
 }
 
 model ContactGroup {
-    id        Int      @id @default(autoincrement())
-    contactId Int
-    groupId   Int
-    contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-    group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-    createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  contactId Int
+  groupId   Int
+  createdAt DateTime @default(now())
+  Contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  Group     Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-    @@unique([contactId, groupId])
+  @@unique([contactId, groupId])
+}
+
+model Group {
+  id           Int            @id @default(autoincrement())
+  nome         String
+  descricao    String?
+  userId       Int
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime
+  ContactGroup ContactGroup[]
+  User         User           @relation(fields: [userId], references: [id])
+
+  @@unique([userId, nome])
 }
 
 model Image {
-    id        Int      @id @default(autoincrement())
-    url       String
-    filename  String
-    userId    Int
-    user      User     @relation(fields: [userId], references: [id])
-    createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  url       String
+  filename  String
+  userId    Int
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id])
 }
 
 model Selection {
-    id          Int      @id @default(autoincrement())
-    user        User     @relation(fields: [userId], references: [id])
-    userId      Int      @unique
-    selectedIds Json
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  userId      Int      @unique
+  selectedIds Json
+  updatedAt   DateTime
+  User        User     @relation(fields: [userId], references: [id])
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
+  password  String
+  createdAt DateTime   @default(now())
+  role      String     @default("user")
+  Contact   Contact[]
+  Group     Group[]
+  Image     Image[]
+  Selection Selection?
 }
