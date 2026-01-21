@@ -5,14 +5,11 @@ import { getErrorMessage } from "@/lib/utils";
 
 export async function GET(req: Request) {
   try {
-    console.log("[GROUPS] Iniciando busca de grupos...");
     const user = await requireUser();
     const userId = user.id;
-    console.log("[GROUPS] Usuário autenticado:", userId);
 
     const url = new URL(req.url);
     const search = (url.searchParams.get("search") || "").trim();
-    console.log("[GROUPS] Busca:", search || "(todos)");
 
     const where: Record<string, unknown> = { userId };
     if (search) {
@@ -24,7 +21,6 @@ export async function GET(req: Request) {
       });
     }
 
-    console.log("[GROUPS] Buscando no banco...");
     const groups = await prisma.group.findMany({
       where,
       orderBy: { nome: "asc" },
@@ -34,8 +30,6 @@ export async function GET(req: Request) {
         },
       },
     });
-
-    console.log("[GROUPS] Grupos encontrados:", groups.length);
 
     // Normalizar resposta para manter compatibilidade com frontend
     const normalizedGroups = groups.map((g) => ({
@@ -47,7 +41,6 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ groups: normalizedGroups });
   } catch (err) {
-    console.error("[GROUPS ERROR]", err);
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }
@@ -85,7 +78,6 @@ export async function POST(req: Request) {
       );
     }
 
-    console.log("[GROUPS] Criando grupo:", nome);
     const created = await prisma.group.create({
       data: {
         nome,
@@ -94,8 +86,6 @@ export async function POST(req: Request) {
         updatedAt: new Date(),
       },
     });
-
-    console.log("[GROUPS] Grupo criado:", created.id);
 
     // Buscar novamente com _count para retornar corretamente
     const group = await prisma.group.findUnique({

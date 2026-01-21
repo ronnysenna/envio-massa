@@ -48,8 +48,8 @@ export default function ManageContactsModal({
         .then((data) => {
           setAllContacts(data.contacts || []);
         })
-        .catch((err) => {
-          console.error("Erro ao buscar contatos:", err);
+        .catch(() => {
+          // Erro silencioso - UI já mostra estado de carregamento
         })
         .finally(() => {
           setLoading(false);
@@ -121,8 +121,6 @@ export default function ManageContactsModal({
     try {
       await onSave(group.id, selectedContactIds);
       onClose();
-    } catch (error) {
-      console.error("Erro ao salvar contatos do grupo:", error);
     } finally {
       setSaving(false);
     }

@@ -14,12 +14,6 @@ export async function GET(
     // Decodifica o filename (caso contenha espaços ou caracteres especiais)
     const decodedFilename = decodeURIComponent(String(filename || ""));
 
-    console.log("[UPLOADS ROUTE] Requisição:", {
-      filename,
-      decodedFilename,
-      cwd: process.cwd(),
-    });
-
     // Validar nome do arquivo para evitar directory traversal
     if (
       !decodedFilename ||
@@ -36,29 +30,11 @@ export async function GET(
     for (const p of possiblePaths) {
       if (fs.existsSync(p)) {
         filePath = p;
-        console.log("[UPLOADS ROUTE] Arquivo encontrado em:", p);
         break;
       }
     }
 
     if (!filePath) {
-      console.error(`[UPLOADS] ❌ Arquivo não encontrado: ${decodedFilename}`);
-      console.error(`[UPLOADS] Caminhos procurados:`, possiblePaths);
-      console.error(`[UPLOADS] process.cwd():`, process.cwd());
-      console.error(`[UPLOADS] __dirname:`, __dirname);
-
-      // Listar arquivos no diretório de uploads para debug
-      const uploadsPath = path.join(process.cwd(), "public", "uploads");
-      try {
-        const files = fs.readdirSync(uploadsPath);
-        console.error(
-          `[UPLOADS] Arquivos em ${uploadsPath}:`,
-          files.slice(0, 10)
-        );
-      } catch {
-        console.error(`[UPLOADS] Não foi possível listar ${uploadsPath}`);
-      }
-
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
@@ -82,8 +58,7 @@ export async function GET(
         "Access-Control-Allow-Origin": "*",
       },
     });
-  } catch (error) {
-    console.error("Erro ao servir arquivo:", error);
+  } catch {
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

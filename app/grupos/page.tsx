@@ -52,8 +52,7 @@ export default function GruposPage() {
         }
         const data = await res.json();
         setGroups(data.groups || []);
-      } catch (err) {
-        console.error("fetchGroups error", err);
+      } catch {
         showToast({ type: "error", message: "Erro ao carregar grupos." });
       } finally {
         setLoading(false);
@@ -119,8 +118,7 @@ export default function GruposPage() {
         message: `Grupo ${isEditing ? "editado" : "criado"} com sucesso.`,
       });
       fetchGroups();
-    } catch (err) {
-      console.error("Erro ao salvar grupo:", err);
+    } catch {
       showToast({ type: "error", message: "Erro ao salvar grupo." });
     }
   };
@@ -148,8 +146,7 @@ export default function GruposPage() {
 
       showToast({ type: "success", message: "Grupo deletado com sucesso." });
       fetchGroups();
-    } catch (err) {
-      console.error("Erro ao deletar grupo:", err);
+    } catch {
       showToast({ type: "error", message: "Erro ao deletar grupo." });
     }
   };
@@ -170,8 +167,7 @@ export default function GruposPage() {
       const data = await res.json();
       setManagingGroup(data.group);
       setIsContactsModalOpen(true);
-    } catch (err) {
-      console.error("Erro ao carregar grupo:", err);
+    } catch {
       showToast({
         type: "error",
         message: "Erro ao carregar detalhes do grupo.",
@@ -207,8 +203,7 @@ export default function GruposPage() {
         message: "Contatos do grupo atualizados com sucesso.",
       });
       fetchGroups();
-    } catch (err) {
-      console.error("Erro ao salvar contatos:", err);
+    } catch {
       showToast({
         type: "error",
         message: "Erro ao salvar contatos do grupo.",

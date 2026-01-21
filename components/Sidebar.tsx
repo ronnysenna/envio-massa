@@ -38,8 +38,6 @@ export default function Sidebar({
         method: "POST",
         credentials: "include",
       });
-    } catch (error) {
-      console.error("Logout error:", error);
     } finally {
       // Force redirect to login regardless of API call result
       window.location.replace("/login");

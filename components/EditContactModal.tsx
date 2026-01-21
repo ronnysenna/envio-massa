@@ -86,8 +86,6 @@ export default function EditContactModal({
 
       await onSave(updatedContact);
       onClose();
-    } catch (error) {
-      console.error("Erro ao salvar contato:", error);
     } finally {
       setLoading(false);
     }

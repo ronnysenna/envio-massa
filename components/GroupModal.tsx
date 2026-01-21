@@ -61,8 +61,6 @@ export default function GroupModal({
 
       await onSave(groupData);
       onClose();
-    } catch (error) {
-      console.error("Erro ao salvar grupo:", error);
     } finally {
       setLoading(false);
     }

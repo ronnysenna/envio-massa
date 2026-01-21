@@ -19,8 +19,7 @@ export async function POST(req: Request) {
     let user = undefined as unknown;
     try {
       user = await requireUser();
-    } catch (e: unknown) {
-      console.warn("Unauthorized bulk import attempt", String(e));
+    } catch {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const userObj = user as { id: number };
@@ -54,7 +53,6 @@ export async function POST(req: Request) {
       } catch (e) {
         failed++;
         failures.push({ telefone, error: String(e) });
-        console.warn("Failed to persist contact", telefone, e);
         // continue processing other contacts
       }
     }
@@ -66,7 +64,6 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ inserted, updated, failed, failures, sample });
   } catch (err) {
-    console.error("Error in /api/contacts/bulk", err);
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

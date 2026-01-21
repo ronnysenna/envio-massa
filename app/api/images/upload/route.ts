@@ -7,7 +7,6 @@ import { getErrorMessage } from "@/lib/utils";
 import { getUploadsDir } from "@/lib/uploadsDir";
 
 const uploadsDir = getUploadsDir();
-console.log("[INIT] Uploads directory:", uploadsDir);
 
 const MAX_FILE_BYTES = Number(process.env.MAX_UPLOAD_BYTES || 5 * 1024 * 1024); // 5MB default
 // aceitar somente JPEG/JPG e PNG no servidor (síncrono com validação cliente)
@@ -52,10 +51,6 @@ export async function POST(req: Request) {
 
     // validação básica de conteúdo (magic bytes) antes de gravar
     if (!isProbablyImage(buffer)) {
-      const nm = (fileField as File & { name?: string }).name || "unknown";
-      console.warn(
-        `Upload rejeitado: arquivo não parece ser uma imagem válida (size=${buffer.length}, name=${nm})`
-      );
       return NextResponse.json(
         { error: "Arquivo não é uma imagem válida ou está corrompido." },
         { status: 400 }
@@ -99,15 +94,11 @@ export async function POST(req: Request) {
     // renomear (atomically move temp -> final)
     try {
       fs.renameSync(tempPath, destPath);
-    } catch (renameErr) {
+    } catch {
       // se rename falhar, tentar remover temp e retornar erro
       try {
         fs.unlinkSync(tempPath);
       } catch {}
-      console.error(
-        "Falha ao mover arquivo temp para destino:",
-        getErrorMessage(renameErr)
-      );
       return NextResponse.json(
         { error: "Falha ao gravar arquivo no servidor." },
         { status: 500 }
@@ -134,12 +125,6 @@ export async function POST(req: Request) {
     if (!mime) {
       if (ext === ".png") mime = "image/png";
       else if (ext === ".jpg" || ext === ".jpeg") mime = "image/jpeg";
-    }
-
-    if (mime && !ALLOWED_MIMES.has(mime)) {
-      console.warn(
-        `Upload recebido com mime inesperado: ${result.mime} (inferido: ${mime}). Aceitando pela extensão.`
-      );
     }
 
     const dest = path.basename(result.filepath);
@@ -181,20 +166,14 @@ export async function POST(req: Request) {
         try {
           fs.unlinkSync(destPath);
         } catch {}
-      } catch (s3Err) {
-        console.warn("S3 upload falhou:", getErrorMessage(s3Err));
+      } catch {
+        // S3 upload failed - continue with local storage
       }
     }
 
     // Sempre salvar apenas o caminho relativo no banco
     // A URL completa será montada pela API /api/images quando necessário
     const relativeUrl = url; // e.g., /api/uploads/1766009146369-03.jpg
-
-    console.log("[UPLOAD DEBUG] Salvando no banco:", {
-      relativeUrl,
-      filename: result.filename || dest,
-      userId,
-    });
 
     // save image record in DB (apenas caminho relativo)
     const image = await prisma.image.create({
@@ -208,14 +187,6 @@ export async function POST(req: Request) {
       isProd && configuredBase
         ? `${configuredBase.replace(/\/$/, "")}${relativeUrl}`
         : relativeUrl;
-
-    console.log("[UPLOAD RESPONSE]", {
-      relativeUrl,
-      publicUrl,
-      configuredBase,
-      isProd,
-      imageId: image.id,
-    });
 
     return NextResponse.json({ url: publicUrl, id: image.id });
   } catch (err) {

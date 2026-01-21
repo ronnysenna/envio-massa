@@ -25,8 +25,6 @@ export default function GalleryPage() {
           const data = await res.json();
           setImages(data.images || []);
         }
-      } catch (error) {
-        console.error("Erro ao carregar imagens:", error);
       } finally {
         setLoading(false);
       }
@@ -98,7 +96,7 @@ export default function GalleryPage() {
                     onError={(e) => {
                       try {
                         (e.currentTarget as HTMLImageElement).src = "/file.svg";
-                      } catch {}
+                      } catch { }
                     }}
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors duration-300 flex items-center justify-center">
@@ -192,7 +190,7 @@ export default function GalleryPage() {
                   onError={(e) => {
                     try {
                       (e.currentTarget as HTMLImageElement).src = "/file.svg";
-                    } catch {}
+                    } catch { }
                   }}
                 />
               </div>

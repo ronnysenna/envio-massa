@@ -62,7 +62,6 @@ export default function ContatosPage() {
 
   const fetchContacts = useCallback(
     async (query = "", pageArg?: number, limitArg?: number) => {
-      console.debug("fetchContacts called", { query, pageArg, limitArg, pageRef: pageRef.current, perPageRef: perPageRef.current });
       try {
         setLoading(true);
         const pageToUse = pageArg ?? pageRef.current ?? 1;
@@ -86,8 +85,7 @@ export default function ContatosPage() {
         // atualiza apenas os dados — não forçar alteração do estado de página/limit
         setContacts(data.contacts || []);
         setTotal(Number(data.total ?? 0));
-      } catch (err) {
-        console.error("fetchContacts error", err);
+      } catch {
         showToast({ type: "error", message: "Erro ao carregar contatos." });
       } finally {
         setLoading(false);
@@ -146,7 +144,6 @@ export default function ContatosPage() {
 
       const result = await res.json().catch(() => ({}));
       if (!res.ok) {
-        console.error("Import bulk failed", res.status, result);
         showToast({
           type: "error",
           message: result.error || "Falha ao persistir contatos.",
@@ -161,8 +158,7 @@ export default function ContatosPage() {
           } atualizados${result.failed ? `, ${result.failed} falharam` : ""
           }.`,
       });
-    } catch (err) {
-      console.error("handleImport error", err);
+    } catch {
       showToast({
         type: "error",
         message: "Erro ao importar contatos. Verifique o arquivo.",
@@ -196,8 +192,7 @@ export default function ContatosPage() {
       setManualName("");
       setManualPhone("");
       fetchContacts("", page, perPage);
-    } catch (err) {
-      console.error("add manual contact", err);
+    } catch {
       showToast({ type: "error", message: "Erro ao adicionar contato." });
     }
   };
@@ -244,8 +239,7 @@ export default function ContatosPage() {
 
       showToast({ type: "success", message: "Contato editado com sucesso." });
       fetchContacts("", page, perPage);
-    } catch (err) {
-      console.error("Erro ao editar contato:", err);
+    } catch {
       showToast({ type: "error", message: "Erro ao editar contato." });
     }
   };
@@ -274,8 +268,7 @@ export default function ContatosPage() {
 
       showToast({ type: "success", message: "Contato deletado com sucesso." });
       fetchContacts("", page, perPage);
-    } catch (err) {
-      console.error("Erro ao deletar contato:", err);
+    } catch {
       showToast({ type: "error", message: "Erro ao deletar contato." });
     }
   };
@@ -491,7 +484,6 @@ export default function ContatosPage() {
                 disabled={page <= 1 || loading}
                 onClick={() => {
                   const np = Math.max(1, page - 1);
-                  console.debug("navigate previous", { from: page, to: np, perPage });
                   setPage(np);
                 }}
                 className="px-3 py-1 border rounded disabled:opacity-50"
@@ -513,7 +505,6 @@ export default function ContatosPage() {
                 disabled={page * perPage >= total || loading}
                 onClick={() => {
                   const np = page + 1;
-                  console.debug("navigate next", { from: page, to: np, perPage });
                   setPage(np);
                 }}
                 className="px-3 py-1 border rounded disabled:opacity-50"

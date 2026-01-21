@@ -125,8 +125,7 @@ export default function ImagemPage() {
           setUploadedUrl(null);
         }, 1500);
       }
-    } catch (err) {
-      console.error("upload error", err);
+    } catch {
       toast.showToast({
         type: "error",
         message: "Erro no upload. Tente novamente.",
@@ -162,8 +161,7 @@ export default function ImagemPage() {
       }
       setImages((s) => s.filter((x) => x.id !== id));
       toast.showToast({ type: "success", message: "Imagem excluída." });
-    } catch (err) {
-      console.error("delete image error", err);
+    } catch {
       toast.showToast({ type: "error", message: "Erro ao excluir imagem." });
     }
   };
@@ -345,13 +343,11 @@ export default function ImagemPage() {
                             /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/,
                             "https://env.jffrontais.com.br"
                           );
-                          console.log("[IMAGE] Tentando produção:", prodUrl);
                           target.src = prodUrl;
                           return;
                         }
 
                         // Se também falhar em produção, mostrar ícone
-                        console.error("[IMAGE ERROR] Falha ao carregar:", img.url);
                         target.src = "/file.svg";
                         target.classList.remove("object-cover");
                         target.classList.add("object-contain", "p-4");

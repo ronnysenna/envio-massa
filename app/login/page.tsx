@@ -15,10 +15,6 @@ export default function LoginPage() {
     setError("");
 
     try {
-      console.log("[FRONTEND] Enviando requisição de login...");
-      console.log("[FRONTEND] Username:", username);
-      console.log("[FRONTEND] Payload:", JSON.stringify({ username, password: "****" }));
-
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -26,24 +22,17 @@ export default function LoginPage() {
         credentials: "include", // Important: include cookies
       });
 
-      console.log("[FRONTEND] Status:", res.status);
-      console.log("[FRONTEND] Headers:", res.headers);
-
       const data = await res.json();
-      console.log("[FRONTEND] Data recebida:", data);
 
       if (!res.ok) {
-        console.error("[LOGIN ERROR]", data);
         setError(data.error || "Erro de login");
         return;
       }
 
-      console.log("[FRONTEND] Login bem-sucedido, redirecionando...");
       // successful login (cookie set by server)
       // Force a hard refresh to ensure middleware picks up the new cookie
       window.location.replace("/dashboard");
-    } catch (err) {
-      console.error("[FRONTEND] Erro na requisição:", err);
+    } catch {
       setError("Erro de conexão");
     }
   };

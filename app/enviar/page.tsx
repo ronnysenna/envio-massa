@@ -296,7 +296,6 @@ export default function EnviarPage() {
 
       return unique;
     } catch (error) {
-      console.error("Erro ao buscar contatos dos grupos:", error);
       return [];
     }
   };

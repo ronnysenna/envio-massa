@@ -5,12 +5,9 @@ import { getErrorMessage } from "@/lib/utils";
 
 export async function GET() {
   try {
-    console.log("[DASHBOARD METRICS] Iniciando busca de métricas...");
     const user = await requireUser();
-    console.log("[DASHBOARD METRICS] Usuário autenticado:", user.id);
     const userId = user.id;
 
-    console.log("[DASHBOARD METRICS] Buscando dados...");
     const [contactsCount, groupsCount, imagesCount, topGroups, recentImages] =
       await Promise.all([
         prisma.contact.count({ where: { userId } }),
@@ -33,14 +30,6 @@ export async function GET() {
         }),
       ]);
 
-    console.log("[DASHBOARD METRICS] Dados coletados:", {
-      contactsCount,
-      groupsCount,
-      imagesCount,
-      topGroupsCount: topGroups.length,
-      recentImagesCount: recentImages.length,
-    });
-
     // Normalize topGroups to simple shape
     const topGroupsNormalized = topGroups.map((g) => ({
       id: g.id,
@@ -56,7 +45,6 @@ export async function GET() {
       recentImages,
     });
   } catch (err) {
-    console.error("[DASHBOARD METRICS ERROR]", err);
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

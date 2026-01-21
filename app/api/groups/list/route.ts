@@ -5,12 +5,9 @@ import { getErrorMessage } from "@/lib/utils";
 
 export async function GET() {
   try {
-    console.log("[GROUPS LIST] Iniciando busca de grupos...");
     const user = await requireUser();
-    console.log("[GROUPS LIST] Usuário autenticado:", user.id);
     const userId = user.id;
 
-    console.log("[GROUPS LIST] Buscando grupos do usuário:", userId);
     const groups = await prisma.group.findMany({
       where: { userId },
       select: {
@@ -32,10 +29,8 @@ export async function GET() {
       },
     }));
 
-    console.log("[GROUPS LIST] Grupos encontrados:", normalizedGroups.length);
     return NextResponse.json({ groups: normalizedGroups });
   } catch (err) {
-    console.error("[GROUPS LIST ERROR]", err);
     return NextResponse.json({ error: getErrorMessage(err) }, { status: 500 });
   }
 }

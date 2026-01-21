@@ -7,7 +7,7 @@ import { getErrorMessage } from "@/lib/utils";
 
 export async function DELETE(
   _req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const resolvedParams = await params;
@@ -20,7 +20,7 @@ export async function DELETE(
     if (!image)
       return NextResponse.json(
         { error: "Imagem não encontrada" },
-        { status: 404 },
+        { status: 404 }
       );
 
     // Only owner can delete
@@ -48,16 +48,15 @@ export async function DELETE(
             const key = image.url.split(`/${S3_BUCKET}/`).pop();
             if (key)
               await s3.send(
-                new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }),
+                new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key })
               );
-          } catch (s3err) {
+          } catch {
             // ignore s3 delete errors
-            console.warn("S3 delete error:", getErrorMessage(s3err));
           }
         }
       }
-    } catch (fileErr) {
-      console.warn("error deleting file", getErrorMessage(fileErr));
+    } catch {
+      // ignore file deletion errors
     }
 
     await prisma.image.delete({ where: { id } });
