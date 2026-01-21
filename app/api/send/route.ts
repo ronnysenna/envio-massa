@@ -114,9 +114,9 @@ export async function POST(req: Request) {
 
       const contactsFromGroups = await prisma.contact.findMany({
         where: {
-          groups: {
+          ContactGroup: {
             some: {
-              group: {
+              Group: {
                 id: { in: groupIdsNum },
                 userId: user.id,
               },
